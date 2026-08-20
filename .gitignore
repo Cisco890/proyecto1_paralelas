@@ -1,0 +1,36 @@
+# Binarios / ejecutables
+main
+screensaver
+integrantes
+*.out
+*.exe
+*.app
+
+# Objetos y librerias de compilacion
+*.o
+*.a
+*.so
+*.d
+*.gch
+
+# Build
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+.cache/
+
+# IDE / editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.clangd/
+
+# Logs / temporales
+*.log
+*.tmp
+*.bak
