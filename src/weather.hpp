@@ -19,6 +19,7 @@ struct WeatherSystem {
     int textureWidth;
     int textureHeight;
     int scale;
+    float spawnY;
 };
 
 bool loadWeatherSystem(
@@ -30,6 +31,7 @@ bool loadWeatherSystem(
     float minimumSpeed,
     float speedVariation
 );
+void setWeatherSpawnHeight(WeatherSystem& system, float normalizedY);
 void destroyWeatherSystem(WeatherSystem& system);
 void updateWeatherSystem(
     WeatherSystem& system,

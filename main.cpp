@@ -6,12 +6,25 @@
 #include <vector>
 
 #include "src/bird.hpp"
+#include "src/cloud.hpp"
 #include "src/flower.hpp"
 #include "src/flying_animal.hpp"
 #include "src/grass.hpp"
 #include "src/season.hpp"
 #include "src/tree.hpp"
+#include "src/tulip.hpp"
 #include "src/weather.hpp"
+
+namespace {
+float getDaylightFactor(Uint32 ticks) {
+    constexpr float cycleMilliseconds = 60000.0f;
+    constexpr float twoPi = 6.28318530718f;
+    const float phase = static_cast<float>(ticks % 60000) / cycleMilliseconds;
+    // Comienza de día, llega a la noche a mitad del ciclo y vuelve a amanecer.
+    const float daylight = 0.5f + 0.5f * std::sin(phase * twoPi + 1.57079632679f);
+    return 0.30f + daylight * 0.70f;
+}
+}
 
 int main() {
     // Configuracion para Pixel Art
@@ -257,6 +270,8 @@ int main() {
         SDL_Quit();
         return 1;
     }
+    // La lluvia comienza debajo de la base visible de las nubes.
+    setWeatherSpawnHeight(rain, 0.20f);
 
     WeatherSystem snow;
     if (!loadWeatherSystem(
@@ -288,14 +303,60 @@ int main() {
         return 1;
     }
 
+    CloudTextures cloudTextures;
+    if (!loadCloudTextures(
+            cloudTextures, renderer,
+            "assets/clouds/normal_cloud_1.png",
+            "assets/clouds/normal_cloud_2.png",
+            "assets/clouds/rain_cloud_1.png",
+            "assets/clouds/rain_cloud_2.png"
+        )) {
+        destroyWeatherSystem(snow);
+        destroyWeatherSystem(rain);
+        destroyGrassTextures(grassTextures);
+        destroyFlyingAnimal(butterfly);
+        destroyFlyingAnimal(bee);
+        destroyFlowerTextures(flowerTextures);
+        for (Bird& currentBird : birds) destroyBird(currentBird);
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
+    TulipTextures tulipTextures;
+    if (!loadTulipTextures(tulipTextures, renderer)) {
+        destroyCloudTextures(cloudTextures);
+        destroyWeatherSystem(snow);
+        destroyWeatherSystem(rain);
+        destroyGrassTextures(grassTextures);
+        destroyFlyingAnimal(butterfly);
+        destroyFlyingAnimal(bee);
+        destroyFlowerTextures(flowerTextures);
+        for (Bird& currentBird : birds) destroyBird(currentBird);
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     bool running = true;
     Uint32 previousTicks = SDL_GetTicks();
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
     std::vector<Flower> flowers = createFlowerField(36);
+    std::vector<Tulip> tulips = createTulipField(20);
+    std::vector<Cloud> clouds = createCloudField(4);
     std::vector<GrassBlade> grass = createGrassField(72);
     int previousFlowerScreenWidth = -1;
     int previousFlowerScreenHeight = -1;
     int previousFlowerGroundY = -1;
+    int previousTulipScreenWidth = -1;
+    int previousTulipScreenHeight = -1;
+    int previousTulipGroundY = -1;
 
     while (running) {
         Uint32 currentTicks = SDL_GetTicks();
@@ -384,6 +445,9 @@ int main() {
             deltaSeconds,
             seasonVisual.snowIntensity
         );
+        updateCloudPositionsParallel(
+            clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
+        );
 
         updateTreePosition(tree, screenWidth, groundY);
 
@@ -402,13 +466,34 @@ int main() {
             previousFlowerGroundY = groundY;
         }
 
+        if (
+            screenWidth != previousTulipScreenWidth ||
+            screenHeight != previousTulipScreenHeight ||
+            groundY != previousTulipGroundY
+        ) {
+            updateTulipPositionsParallel(
+                tulips, tulipTextures, screenWidth, screenHeight, groundY
+            );
+            previousTulipScreenWidth = screenWidth;
+            previousTulipScreenHeight = screenHeight;
+            previousTulipGroundY = groundY;
+        }
+
         // Cielo
+        const float daylight = getDaylightFactor(currentTicks);
+        SDL_Color skyColor = seasonVisual.skyColor;
+        const float rainDarkening = std::min(1.0f, seasonVisual.rainIntensity) * 0.18f;
+        const float skyBrightness = daylight * (1.0f - rainDarkening);
+        skyColor.r = static_cast<Uint8>(skyColor.r * skyBrightness);
+        skyColor.g = static_cast<Uint8>(skyColor.g * skyBrightness);
+        skyColor.b = static_cast<Uint8>(skyColor.b * skyBrightness);
+
         SDL_SetRenderDrawColor(
             renderer,
-            seasonVisual.skyColor.r,
-            seasonVisual.skyColor.g,
-            seasonVisual.skyColor.b,
-            seasonVisual.skyColor.a
+            skyColor.r,
+            skyColor.g,
+            skyColor.b,
+            skyColor.a
         );
         SDL_RenderClear(renderer);
 
@@ -420,12 +505,17 @@ int main() {
             screenHeight - groundY
         };
 
+        SDL_Color groundColor = seasonVisual.groundColor;
+        groundColor.r = static_cast<Uint8>(groundColor.r * daylight);
+        groundColor.g = static_cast<Uint8>(groundColor.g * daylight);
+        groundColor.b = static_cast<Uint8>(groundColor.b * daylight);
+
         SDL_SetRenderDrawColor(
             renderer,
-            seasonVisual.groundColor.r,
-            seasonVisual.groundColor.g,
-            seasonVisual.groundColor.b,
-            seasonVisual.groundColor.a
+            groundColor.r,
+            groundColor.g,
+            groundColor.b,
+            groundColor.a
         );
         SDL_RenderFillRect(renderer, &ground);
 
@@ -458,6 +548,25 @@ int main() {
             );
         }
 
+        const bool springIsCurrent = seasonSystem.current == Season::Spring;
+        const bool springIsNext = getNextSeason(seasonSystem.current) == Season::Spring;
+        float tulipPresence = springIsCurrent ? 1.0f : 0.0f;
+        if (springIsNext) tulipPresence = seasonVisual.transitionProgress;
+        for (const Tulip& tulip : tulips) {
+            renderTulip(renderer, tulipTextures, tulip, currentTicks,
+                        static_cast<Uint8>(tulipPresence * 255.0f));
+        }
+
+        // Las nubes forman parte del fondo; el arbol se dibuja encima.
+        const bool stormy = seasonVisual.rainIntensity > 0.0f ||
+                            seasonVisual.snowIntensity > 0.0f;
+        // La precipitación se dibuja antes que las nubes para que quede detrás.
+        renderWeatherSystem(renderer, rain, seasonVisual.rainIntensity);
+        renderWeatherSystem(renderer, snow, seasonVisual.snowIntensity);
+        for (const Cloud& cloud : clouds) {
+            renderCloud(renderer, cloudTextures, cloud, stormy);
+        }
+
         renderTree(renderer, tree);
 
         renderFlyingAnimal(
@@ -478,14 +587,13 @@ int main() {
         }
 
         // El clima se dibuja al final para que caiga delante del escenario.
-        renderWeatherSystem(renderer, rain, seasonVisual.rainIntensity);
-        renderWeatherSystem(renderer, snow, seasonVisual.snowIntensity);
-
         SDL_RenderPresent(renderer);
     }
 
     destroyWeatherSystem(snow);
     destroyWeatherSystem(rain);
+    destroyCloudTextures(cloudTextures);
+    destroyTulipTextures(tulipTextures);
     destroyGrassTextures(grassTextures);
     destroyFlyingAnimal(butterfly);
     destroyFlyingAnimal(bee);

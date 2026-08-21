@@ -5,6 +5,15 @@
 #include <cmath>
 #include <iostream>
 
+namespace {
+float pseudoRandom(std::size_t index, unsigned int seed) {
+    unsigned int value = static_cast<unsigned int>(index) * 747796405u + seed;
+    value = (value ^ (value >> 16u)) * 2246822519u;
+    value ^= value >> 13u;
+    return static_cast<float>(value & 0xffffu) / 65535.0f;
+}
+}
+
 bool loadWeatherSystem(
     WeatherSystem& system,
     SDL_Renderer* renderer,
@@ -16,6 +25,7 @@ bool loadWeatherSystem(
 ) {
     system = {};
     system.scale = scale;
+    system.spawnY = -0.05f;
 
     for (const char* path : paths) {
         SDL_Texture* texture = IMG_LoadTexture(renderer, path);
@@ -39,10 +49,10 @@ bool loadWeatherSystem(
 
     system.particles.reserve(particleCount);
     for (std::size_t index = 0; index < particleCount; ++index) {
-        const float x = static_cast<float>((index * 73) % 1000) / 1000.0f;
-        const float y = -static_cast<float>((index * 47) % 1000) / 1000.0f;
-        const float variation = static_cast<float>((index * 29) % 100) / 100.0f;
-        const float drift = static_cast<float>(static_cast<int>(index % 7) - 3) * 4.0f;
+        const float x = pseudoRandom(index, 17u);
+        const float y = system.spawnY + pseudoRandom(index, 31u) * 0.03f;
+        const float variation = pseudoRandom(index, 47u);
+        const float drift = (pseudoRandom(index, 61u) - 0.5f) * 14.0f;
         system.particles.push_back({
             x, y, minimumSpeed + speedVariation * variation, drift,
             index % system.textures.size()
@@ -50,6 +60,14 @@ bool loadWeatherSystem(
     }
 
     return true;
+}
+
+void setWeatherSpawnHeight(WeatherSystem& system, float normalizedY) {
+    system.spawnY = normalizedY;
+    for (std::size_t index = 0; index < system.particles.size(); ++index) {
+        system.particles[index].y = normalizedY +
+            pseudoRandom(index, 31u) * 0.03f;
+    }
 }
 
 void destroyWeatherSystem(WeatherSystem& system) {
@@ -79,7 +97,7 @@ void updateWeatherSystem(
         particle.x += particle.drift * deltaSeconds / screenWidth;
 
         if (particle.y > 1.05f) {
-            particle.y = -0.05f;
+            particle.y = system.spawnY - 0.02f;
         }
         if (particle.x > 1.02f) {
             particle.x = -0.02f;
