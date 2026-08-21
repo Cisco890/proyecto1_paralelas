@@ -249,3 +249,8 @@ Donde:
 # Objetivo
 
 Crear un protector de pantalla dinámico, relajante y visualmente atractivo que nunca se vea exactamente igual dos veces, gracias a la combinación de estaciones, ciclo día/noche y eventos aleatorios.
+
+
+# Algunas Screenshots
+![primavera](image.png)
+![invierno](image-1.png)
