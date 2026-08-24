@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/bird.hpp"
+#include "src/celestial_body.hpp"
 #include "src/cloud.hpp"
 #include "src/flower.hpp"
 #include "src/flying_animal.hpp"
@@ -17,9 +18,10 @@
 
 namespace {
 float getDaylightFactor(Uint32 ticks) {
-    constexpr float cycleMilliseconds = 60000.0f;
     constexpr float twoPi = 6.28318530718f;
-    const float phase = static_cast<float>(ticks % 60000) / cycleMilliseconds;
+    const float phase =
+        static_cast<float>(ticks % DAY_NIGHT_CYCLE_MILLISECONDS) /
+        static_cast<float>(DAY_NIGHT_CYCLE_MILLISECONDS);
     // Comienza de día, llega a la noche a mitad del ciclo y vuelve a amanecer.
     const float daylight = 0.5f + 0.5f * std::sin(phase * twoPi + 1.57079632679f);
     return 0.30f + daylight * 0.70f;
@@ -121,6 +123,14 @@ int main() {
     // Elementos a renderizar (memoria)
     // --------------------------------------
     Tree tree;
+    CelestialBody sun = createCelestialBody(
+        CelestialBodyType::Sun,
+        {255, 221, 64, 255}
+    );
+    CelestialBody moon = createCelestialBody(
+        CelestialBodyType::Moon,
+        {245, 245, 235, 255}
+    );
 
     if (!loadTree(tree, renderer, "assets/tree/tree.png")) {
         SDL_DestroyRenderer(renderer);
@@ -427,6 +437,13 @@ int main() {
         // El suelo comienza al 85% de la altura
         int groundY = static_cast<int>(screenHeight * 0.85);
 
+        updateCelestialBody(
+            sun, screenWidth, screenHeight, groundY, currentTicks
+        );
+        updateCelestialBody(
+            moon, screenWidth, screenHeight, groundY, currentTicks
+        );
+
         updateFlyingAnimal(bee, screenWidth, groundY, deltaSeconds, currentTicks);
         updateFlyingAnimal(
             butterfly, screenWidth, groundY, deltaSeconds, currentTicks
@@ -496,6 +513,10 @@ int main() {
             skyColor.a
         );
         SDL_RenderClear(renderer);
+
+        // Se dibujan al fondo para que las nubes y el arbol puedan ocultarlos.
+        renderCelestialBody(renderer, sun);
+        renderCelestialBody(renderer, moon);
 
         // Suelo temporal
         SDL_Rect ground = {
@@ -592,6 +613,8 @@ int main() {
 
     destroyWeatherSystem(snow);
     destroyWeatherSystem(rain);
+    destroyCelestialBody(moon);
+    destroyCelestialBody(sun);
     destroyCloudTextures(cloudTextures);
     destroyTulipTextures(tulipTextures);
     destroyGrassTextures(grassTextures);
