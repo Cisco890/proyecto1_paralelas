@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "src/flying_animal.hpp"
 #include "src/grass.hpp"
 #include "src/season.hpp"
+#include "src/star.hpp"
 #include "src/tree.hpp"
 #include "src/tulip.hpp"
 #include "src/weather.hpp"
@@ -131,6 +133,7 @@ int main() {
         CelestialBodyType::Moon,
         {245, 245, 235, 255}
     );
+    StarTextures starTextures = {};
 
     if (!loadTree(tree, renderer, "assets/tree/tree.png")) {
         SDL_DestroyRenderer(renderer);
@@ -361,6 +364,8 @@ int main() {
     std::vector<Tulip> tulips = createTulipField(20);
     std::vector<Cloud> clouds = createCloudField(4);
     std::vector<GrassBlade> grass = createGrassField(72);
+    constexpr std::size_t maximumStarCount = 90;
+    std::vector<Star> stars = createStarField(maximumStarCount);
     int previousFlowerScreenWidth = -1;
     int previousFlowerScreenHeight = -1;
     int previousFlowerGroundY = -1;
@@ -514,6 +519,22 @@ int main() {
         );
         SDL_RenderClear(renderer);
 
+        // Las estrellas aparecen gradualmente conforme disminuye la luz.
+        const float nightPresence = std::clamp(
+            (1.0f - daylight) / 0.70f,
+            0.0f,
+            1.0f
+        );
+        renderStarField(
+            renderer,
+            starTextures,
+            stars,
+            screenWidth,
+            groundY,
+            currentTicks,
+            maximumStarCount * nightPresence
+        );
+
         // Se dibujan al fondo para que las nubes y el arbol puedan ocultarlos.
         renderCelestialBody(renderer, sun);
         renderCelestialBody(renderer, moon);
@@ -613,6 +634,7 @@ int main() {
 
     destroyWeatherSystem(snow);
     destroyWeatherSystem(rain);
+    destroyStarTextures(starTextures);
     destroyCelestialBody(moon);
     destroyCelestialBody(sun);
     destroyCloudTextures(cloudTextures);
