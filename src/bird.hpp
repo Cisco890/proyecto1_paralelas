@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 
+#include <array>
+
 // Elemento dinamico: vuela y actualiza su ubicacion.
 struct Bird {
     float x;
@@ -12,6 +14,8 @@ struct Bird {
     int width;
     int height;
     SDL_Texture* texture;
+    std::array<SDL_Texture*, 3> animationFrames{};
+    Uint32 animationOffset = 0;
 };
 
 // Carga el PNG y deja el pajaro listo para usarse.
@@ -22,6 +26,15 @@ bool loadBird(
     const char* path,
     float startX,
     float startY
+);
+
+bool loadAnimatedBird(
+    Bird& bird,
+    SDL_Renderer* renderer,
+    const std::array<const char*, 3>& paths,
+    float startX,
+    float startY,
+    Uint32 animationOffset = 0
 );
 
 void destroyBird(Bird& bird);

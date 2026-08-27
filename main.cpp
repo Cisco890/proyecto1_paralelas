@@ -12,6 +12,7 @@
 #include "src/flower.hpp"
 #include "src/flying_animal.hpp"
 #include "src/grass.hpp"
+#include "src/leaf.hpp"
 #include "src/season.hpp"
 #include "src/star.hpp"
 #include "src/tree.hpp"
@@ -75,22 +76,17 @@ int main() {
 
     // Crear ventana normal
     //
-    // IMPORTANTE:
-    // No usamos FULLSCREEN para conservar:
-    // - Barra de titulo
-    // - Minimizar
-    // - Maximizar / restaurar
-    // - Cerrar
+    // Se crea con el tamano del escritorio, sin SDL_WINDOW_MAXIMIZED.
+    // Algunos drivers de WSL/WSLg se quedan bloqueados al negociar esa
+    // bandera durante SDL_CreateWindow.
     //
     SDL_Window* window = SDL_CreateWindow(
         "Arbol Estacional - Screen Saver",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
         displayBounds.w,
         displayBounds.h,
-        SDL_WINDOW_SHOWN |
-        SDL_WINDOW_RESIZABLE |
-        SDL_WINDOW_MAXIMIZED
+        SDL_WINDOW_SHOWN
     );
 
     if (window == nullptr) {
@@ -125,6 +121,7 @@ int main() {
     // Elementos a renderizar (memoria)
     // --------------------------------------
     Tree tree;
+    LeafTextures leafTextures;
     CelestialBody sun = createCelestialBody(
         CelestialBodyType::Sun,
         {255, 221, 64, 255}
@@ -162,6 +159,34 @@ int main() {
     }
 
     birds.push_back(bird);
+
+    Bird redBird;
+    if (!loadAnimatedBird(
+            redBird,
+            renderer,
+            {{
+                "assets/animals/red_bird_frame_1.png",
+                "assets/animals/red_bird_frame_2.png",
+                "assets/animals/red_bird_frame_3.png"
+            }},
+            static_cast<float>(displayBounds.w) * 0.35f,
+            static_cast<float>(displayBounds.h) * 0.28f,
+            90
+        )) {
+        destroyBird(bird);
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+    // Los sprites del pajaro rojo tienen un lienzo de 1254x1254 px. Se
+    // reduce su destino a 90x90 para que sea apenas mayor que la abeja y la
+    // mariposa, que se renderizan a 75x75 (25 px * escala 3).
+    redBird.width = 90;
+    redBird.height = 90;
+    birds.push_back(redBird);
 
     FlowerTextures flowerTextures;
 
@@ -213,9 +238,9 @@ int main() {
             butterfly,
             renderer,
             {{
-                "assets/animals/purple_butterfly_frame_1.png",
-                "assets/animals/purple_butterfly_frame_2.png",
-                "assets/animals/purple_butterfly_frame_3.png"
+                "assets/animals/pink_butterfly_frame_1.png",
+                "assets/animals/pink_butterfly_frame_2.png",
+                "assets/animals/pink_butterfly_frame_2.png"
             }},
             static_cast<float>(displayBounds.w) * 0.55f,
             static_cast<float>(displayBounds.h) * 0.72f,
@@ -357,6 +382,24 @@ int main() {
         return 1;
     }
 
+    if (!loadLeafTextures(renderer, leafTextures)) {
+        destroyTulipTextures(tulipTextures);
+        destroyCloudTextures(cloudTextures);
+        destroyWeatherSystem(snow);
+        destroyWeatherSystem(rain);
+        destroyGrassTextures(grassTextures);
+        destroyFlyingAnimal(butterfly);
+        destroyFlyingAnimal(bee);
+        destroyFlowerTextures(flowerTextures);
+        for (Bird& currentBird : birds) destroyBird(currentBird);
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     bool running = true;
     Uint32 previousTicks = SDL_GetTicks();
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
@@ -364,6 +407,7 @@ int main() {
     std::vector<Tulip> tulips = createTulipField(20);
     std::vector<Cloud> clouds = createCloudField(4);
     std::vector<GrassBlade> grass = createGrassField(72);
+    std::vector<Leaf> leaves = createLeafField(72);
     constexpr std::size_t maximumStarCount = 90;
     std::vector<Star> stars = createStarField(maximumStarCount);
     int previousFlowerScreenWidth = -1;
@@ -430,13 +474,21 @@ int main() {
             &screenHeight
         );
 
-        for (Bird& currentBird : birds) {
-            updateBird(
-                currentBird,
-                screenWidth,
-                screenHeight,
-                deltaSeconds
-            );
+        const float daylight = getDaylightFactor(currentTicks);
+        const float daytimePresence = std::clamp(
+            (daylight - 0.30f) / 0.35f, 0.0f, 1.0f
+        );
+        const bool isDaytime = daytimePresence > 0.05f;
+
+        if (isDaytime) {
+            for (Bird& currentBird : birds) {
+                updateBird(
+                    currentBird,
+                    screenWidth,
+                    screenHeight,
+                    deltaSeconds
+                );
+            }
         }
 
         // El suelo comienza al 85% de la altura
@@ -449,10 +501,12 @@ int main() {
             moon, screenWidth, screenHeight, groundY, currentTicks
         );
 
-        updateFlyingAnimal(bee, screenWidth, groundY, deltaSeconds, currentTicks);
-        updateFlyingAnimal(
-            butterfly, screenWidth, groundY, deltaSeconds, currentTicks
-        );
+        if (isDaytime) {
+            updateFlyingAnimal(bee, screenWidth, groundY, deltaSeconds, currentTicks);
+            updateFlyingAnimal(
+                butterfly, screenWidth, groundY, deltaSeconds, currentTicks
+            );
+        }
         updateWeatherSystem(
             rain,
             screenWidth,
@@ -472,6 +526,16 @@ int main() {
         );
 
         updateTreePosition(tree, screenWidth, groundY);
+
+        LeafSeason leafSeason = LeafSeason::Spring;
+        if (seasonSystem.current == Season::Autumn) {
+            leafSeason = LeafSeason::Autumn;
+        }
+        // Las hojas se actualizan en paralelo: cada hilo trabaja sobre un bloque
+        // independiente y la fase de animacion no toca SDL.
+        updateLeavesParallel(
+            leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
+        );
 
         // Cada flor actualiza su posicion en paralelo cuando cambia la ventana.
         if (
@@ -502,10 +566,19 @@ int main() {
         }
 
         // Cielo
-        const float daylight = getDaylightFactor(currentTicks);
         SDL_Color skyColor = seasonVisual.skyColor;
+        const SDL_Color nightSky = {18, 27, 48, 255};
+        skyColor.r = static_cast<Uint8>(
+            nightSky.r + (skyColor.r - nightSky.r) * daytimePresence
+        );
+        skyColor.g = static_cast<Uint8>(
+            nightSky.g + (skyColor.g - nightSky.g) * daytimePresence
+        );
+        skyColor.b = static_cast<Uint8>(
+            nightSky.b + (skyColor.b - nightSky.b) * daytimePresence
+        );
         const float rainDarkening = std::min(1.0f, seasonVisual.rainIntensity) * 0.18f;
-        const float skyBrightness = daylight * (1.0f - rainDarkening);
+        const float skyBrightness = 1.0f - rainDarkening * daytimePresence;
         skyColor.r = static_cast<Uint8>(skyColor.r * skyBrightness);
         skyColor.g = static_cast<Uint8>(skyColor.g * skyBrightness);
         skyColor.b = static_cast<Uint8>(skyColor.b * skyBrightness);
@@ -548,9 +621,10 @@ int main() {
         };
 
         SDL_Color groundColor = seasonVisual.groundColor;
-        groundColor.r = static_cast<Uint8>(groundColor.r * daylight);
-        groundColor.g = static_cast<Uint8>(groundColor.g * daylight);
-        groundColor.b = static_cast<Uint8>(groundColor.b * daylight);
+        const float groundShadow = 0.78f + daytimePresence * 0.22f;
+        groundColor.r = static_cast<Uint8>(groundColor.r * groundShadow);
+        groundColor.g = static_cast<Uint8>(groundColor.g * groundShadow);
+        groundColor.b = static_cast<Uint8>(groundColor.b * groundShadow);
 
         SDL_SetRenderDrawColor(
             renderer,
@@ -611,21 +685,37 @@ int main() {
 
         renderTree(renderer, tree);
 
-        renderFlyingAnimal(
-            renderer,
-            bee,
-            currentTicks,
-            static_cast<Uint8>(seasonVisual.beePresence * 255.0f)
-        );
-        renderFlyingAnimal(
-            renderer,
-            butterfly,
-            currentTicks,
-            static_cast<Uint8>(seasonVisual.butterflyPresence * 255.0f)
-        );
+        std::size_t visibleLeaves = 0;
+        Uint8 leafOpacity = 255;
+        if (seasonSystem.current == Season::Spring) {
+            visibleLeaves = 72;
+        } else if (seasonSystem.current == Season::Autumn) {
+            visibleLeaves = 48;
+            // Las pilas se desvanecen durante el cambio de otono a invierno.
+            leafOpacity = static_cast<Uint8>(
+                (1.0f - seasonVisual.transitionProgress) * 255.0f
+            );
+        }
+        renderLeaves(renderer, leafTextures, leaves, leafSeason,
+                     visibleLeaves, currentTicks, leafOpacity);
 
-        for (const Bird& currentBird : birds) {
-            renderBird(renderer, currentBird);
+        if (isDaytime) {
+            renderFlyingAnimal(
+                renderer,
+                bee,
+                currentTicks,
+                static_cast<Uint8>(seasonVisual.beePresence * daytimePresence * 255.0f)
+            );
+            renderFlyingAnimal(
+                renderer,
+                butterfly,
+                currentTicks,
+                static_cast<Uint8>(seasonVisual.butterflyPresence * daytimePresence * 255.0f)
+            );
+
+            for (const Bird& currentBird : birds) {
+                renderBird(renderer, currentBird);
+            }
         }
 
         // El clima se dibuja al final para que caiga delante del escenario.
@@ -634,6 +724,7 @@ int main() {
 
     destroyWeatherSystem(snow);
     destroyWeatherSystem(rain);
+    destroyLeafTextures(leafTextures);
     destroyStarTextures(starTextures);
     destroyCelestialBody(moon);
     destroyCelestialBody(sun);

@@ -38,10 +38,45 @@ bool loadBird(
     return true;
 }
 
+bool loadAnimatedBird(Bird& bird, SDL_Renderer* renderer,
+                      const std::array<const char*, 3>& paths,
+                      float startX, float startY, Uint32 animationOffset) {
+    bird = {};
+    bird.x = startX;
+    bird.y = startY;
+    bird.velocityX = 120.0f;
+    bird.animationOffset = animationOffset;
+
+    for (std::size_t index = 0; index < bird.animationFrames.size(); ++index) {
+        bird.animationFrames[index] = IMG_LoadTexture(renderer, paths[index]);
+        if (bird.animationFrames[index] == nullptr) {
+            std::cerr << "Error cargando los cuadros del pajaro: "
+                      << IMG_GetError() << std::endl;
+            destroyBird(bird);
+            return false;
+        }
+    }
+
+    if (SDL_QueryTexture(bird.animationFrames[0], nullptr, nullptr,
+                         &bird.width, &bird.height) != 0) {
+        std::cerr << "Error obteniendo dimensiones del pajaro: "
+                  << SDL_GetError() << std::endl;
+        destroyBird(bird);
+        return false;
+    }
+    return true;
+}
+
 void destroyBird(Bird& bird) {
     if (bird.texture != nullptr) {
         SDL_DestroyTexture(bird.texture);
         bird.texture = nullptr;
+    }
+    for (SDL_Texture*& frame : bird.animationFrames) {
+        if (frame != nullptr) {
+            SDL_DestroyTexture(frame);
+            frame = nullptr;
+        }
     }
 }
 
@@ -87,5 +122,10 @@ void renderBird(SDL_Renderer* renderer, const Bird& bird) {
         bird.height
     };
 
-    SDL_RenderCopy(renderer, bird.texture, nullptr, &dest);
+    SDL_Texture* texture = bird.texture;
+    if (bird.animationFrames[0] != nullptr) {
+        texture = bird.animationFrames[((SDL_GetTicks() + bird.animationOffset) / 180) %
+                                       bird.animationFrames.size()];
+    }
+    SDL_RenderCopy(renderer, texture, nullptr, &dest);
 }

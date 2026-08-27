@@ -32,8 +32,7 @@ bool loadTree(
             << SDL_GetError()
             << std::endl;
 
-        SDL_DestroyTexture(tree.texture);
-        tree.texture = nullptr;
+        destroyTree(tree);
         return false;
     }
 

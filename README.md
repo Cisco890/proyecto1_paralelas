@@ -50,6 +50,9 @@ opacidad. Tambien se pueden probar manualmente desde la ventana:
 La configuracion compartida de cada estacion esta en `src/season.cpp`. Los
 elementos nuevos deben consultar `SeasonSystem` y `SeasonProfile` para adaptar
 su cantidad, color o comportamiento sin duplicar la logica de estaciones.
+El arbol usa la textura base. Las hojas animadas de primavera y las hojas de
+otono, que se acumulan en el suelo, se administran desde `src/leaf.cpp`. La posicion y la
+caida de cada hoja se actualizan en paralelo por bloques independientes.
 Los animales animados reutilizables se implementan en `src/flying_animal.cpp`.
 La lluvia y la nieve usan el sistema de particulas de `src/weather.cpp`, y la
 grama animada se administra desde `src/grass.cpp`. Sus intensidades se definen
