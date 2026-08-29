@@ -15,6 +15,21 @@ void destroySet(std::array<SDL_Texture*, 2>& set) {
         }
     }
 }
+
+void updateCloudRange(std::vector<Cloud>& clouds,
+                      const CloudTextures& textures,
+                      int screenWidth, int screenHeight,
+                      float deltaSeconds,
+                      std::size_t begin, std::size_t end) {
+    for (std::size_t index = begin; index < end; ++index) {
+        Cloud& cloud = clouds[index];
+        cloud.x += cloud.speed * deltaSeconds;
+        if (cloud.x > 1.15f) cloud.x = -0.20f;
+        cloud.dest = {static_cast<int>(cloud.x * screenWidth),
+                      static_cast<int>(cloud.y * screenHeight),
+                      textures.width * 4, textures.height * 4};
+    }
+}
 }
 
 bool loadCloudTextures(
@@ -62,6 +77,16 @@ std::vector<Cloud> createCloudField(std::size_t count) {
     return clouds;
 }
 
+void updateCloudPositionsSequential(std::vector<Cloud>& clouds,
+                                    const CloudTextures& textures,
+                                    int screenWidth, int screenHeight,
+                                    float deltaSeconds) {
+    if (clouds.empty() || screenWidth <= 0 || screenHeight <= 0) return;
+    updateCloudRange(
+        clouds, textures, screenWidth, screenHeight, deltaSeconds, 0, clouds.size()
+    );
+}
+
 void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
                                   const CloudTextures& textures,
                                   int screenWidth, int screenHeight,
@@ -76,14 +101,9 @@ void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
         const std::size_t begin = worker * chunk;
         const std::size_t end = std::min(begin + chunk, clouds.size());
         workers.emplace_back([&, begin, end]() {
-            for (std::size_t index = begin; index < end; ++index) {
-                Cloud& cloud = clouds[index];
-                cloud.x += cloud.speed * deltaSeconds;
-                if (cloud.x > 1.15f) cloud.x = -0.20f;
-                cloud.dest = {static_cast<int>(cloud.x * screenWidth),
-                              static_cast<int>(cloud.y * screenHeight),
-                              textures.width * 4, textures.height * 4};
-            }
+            updateCloudRange(
+                clouds, textures, screenWidth, screenHeight, deltaSeconds, begin, end
+            );
         });
     }
     for (std::thread& worker : workers) worker.join();

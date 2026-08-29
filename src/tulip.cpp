@@ -3,6 +3,20 @@
 #include <algorithm>
 #include <thread>
 
+namespace {
+void updateTulipRange(std::vector<Tulip>& tulips,
+                      const TulipTextures& textures,
+                      int screenWidth, int screenHeight, int groundY,
+                      std::size_t begin, std::size_t end) {
+    for (std::size_t index = begin; index < end; ++index) {
+        const FlowerTextures& selected = tulips[index].orange ?
+            textures.orange : textures.red;
+        updateFlowerPosition(tulips[index].placement, selected,
+                             screenWidth, screenHeight, groundY);
+    }
+}
+}
+
 bool loadTulipTextures(TulipTextures& textures, SDL_Renderer* renderer) {
     textures = {};
     return loadFlowerTextures(textures.red, renderer,
@@ -32,6 +46,14 @@ std::vector<Tulip> createTulipField(std::size_t count) {
     return tulips;
 }
 
+void updateTulipPositionsSequential(std::vector<Tulip>& tulips,
+                                    const TulipTextures& textures,
+                                    int screenWidth, int screenHeight, int groundY) {
+    updateTulipRange(
+        tulips, textures, screenWidth, screenHeight, groundY, 0, tulips.size()
+    );
+}
+
 void updateTulipPositionsParallel(std::vector<Tulip>& tulips,
                                   const TulipTextures& textures,
                                   int screenWidth, int screenHeight, int groundY) {
@@ -45,12 +67,9 @@ void updateTulipPositionsParallel(std::vector<Tulip>& tulips,
         const std::size_t begin = worker * chunk;
         const std::size_t end = std::min(begin + chunk, tulips.size());
         workers.emplace_back([&, begin, end]() {
-            for (std::size_t index = begin; index < end; ++index) {
-                const FlowerTextures& selected = tulips[index].orange ?
-                    textures.orange : textures.red;
-                updateFlowerPosition(tulips[index].placement, selected,
-                                     screenWidth, screenHeight, groundY);
-            }
+            updateTulipRange(
+                tulips, textures, screenWidth, screenHeight, groundY, begin, end
+            );
         });
     }
     for (std::thread& worker : workers) worker.join();
