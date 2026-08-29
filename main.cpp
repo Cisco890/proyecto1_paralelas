@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "src/bird.hpp"
@@ -13,6 +15,7 @@
 #include "src/flying_animal.hpp"
 #include "src/grass.hpp"
 #include "src/leaf.hpp"
+#include "src/performance.hpp"
 #include "src/season.hpp"
 #include "src/star.hpp"
 #include "src/tree.hpp"
@@ -31,7 +34,27 @@ float getDaylightFactor(Uint32 ticks) {
 }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    bool runBenchmark = std::getenv("SCREENSAVER_BENCHMARK") != nullptr;
+    UpdateExecutionMode executionMode = UpdateExecutionMode::Parallel;
+    UpdateExecutionMode benchmarkMode = UpdateExecutionMode::Compare;
+    for (int index = 1; index < argc; ++index) {
+        const std::string argument = argv[index];
+        if (argument == "--benchmark") {
+            runBenchmark = true;
+        } else if (argument == "--sequential") {
+            executionMode = UpdateExecutionMode::Sequential;
+            benchmarkMode = UpdateExecutionMode::Sequential;
+        } else if (argument == "--parallel") {
+            executionMode = UpdateExecutionMode::Parallel;
+            benchmarkMode = UpdateExecutionMode::Parallel;
+        }
+    }
+
+    if (runBenchmark) {
+        return runPerformanceBenchmark(benchmarkMode);
+    }
+
     // Configuracion para Pixel Art
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
@@ -521,9 +544,15 @@ int main() {
             deltaSeconds,
             seasonVisual.snowIntensity
         );
-        updateCloudPositionsParallel(
-            clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
-        );
+        if (executionMode == UpdateExecutionMode::Sequential) {
+            updateCloudPositionsSequential(
+                clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
+            );
+        } else {
+            updateCloudPositionsParallel(
+                clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
+            );
+        }
 
         updateTreePosition(tree, screenWidth, groundY);
 
@@ -533,9 +562,15 @@ int main() {
         }
         // Las hojas se actualizan en paralelo: cada hilo trabaja sobre un bloque
         // independiente y la fase de animacion no toca SDL.
-        updateLeavesParallel(
-            leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
-        );
+        if (executionMode == UpdateExecutionMode::Sequential) {
+            updateLeavesSequential(
+                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
+            );
+        } else {
+            updateLeavesParallel(
+                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
+            );
+        }
 
         // Cada flor actualiza su posicion en paralelo cuando cambia la ventana.
         if (
@@ -543,9 +578,15 @@ int main() {
             screenHeight != previousFlowerScreenHeight ||
             groundY != previousFlowerGroundY
         ) {
-            updateFlowerPositionsParallel(
-                flowers, flowerTextures, screenWidth, screenHeight, groundY
-            );
+            if (executionMode == UpdateExecutionMode::Sequential) {
+                updateFlowerPositionsSequential(
+                    flowers, flowerTextures, screenWidth, screenHeight, groundY
+                );
+            } else {
+                updateFlowerPositionsParallel(
+                    flowers, flowerTextures, screenWidth, screenHeight, groundY
+                );
+            }
 
             previousFlowerScreenWidth = screenWidth;
             previousFlowerScreenHeight = screenHeight;
@@ -557,9 +598,15 @@ int main() {
             screenHeight != previousTulipScreenHeight ||
             groundY != previousTulipGroundY
         ) {
-            updateTulipPositionsParallel(
-                tulips, tulipTextures, screenWidth, screenHeight, groundY
-            );
+            if (executionMode == UpdateExecutionMode::Sequential) {
+                updateTulipPositionsSequential(
+                    tulips, tulipTextures, screenWidth, screenHeight, groundY
+                );
+            } else {
+                updateTulipPositionsParallel(
+                    tulips, tulipTextures, screenWidth, screenHeight, groundY
+                );
+            }
             previousTulipScreenWidth = screenWidth;
             previousTulipScreenHeight = screenHeight;
             previousTulipGroundY = groundY;
