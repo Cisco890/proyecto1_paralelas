@@ -47,6 +47,40 @@ opacidad. Tambien se pueden probar manualmente desde la ventana:
 - `4`: invierno
 - `Esc`: salir
 
+### Comparación secuencial vs paralela
+
+Se agregaron rutas secuenciales para las actualizaciones de:
+
+- flores
+- tulipanes
+- nubes
+- hojas
+
+La animacion ahora puede ejecutarse en cualquiera de los dos modos:
+
+```bash
+./screensaver --parallel
+./screensaver --sequential
+```
+
+Y un benchmark reproducible en consola para compararlas contra sus versiones
+paralelas usando exactamente la misma logica de actualizacion:
+
+```bash
+./screensaver --benchmark
+```
+
+Si quieres medir solo un modo:
+
+```bash
+./screensaver --benchmark --parallel
+./screensaver --benchmark --sequential
+```
+
+Tambien se puede activar con `SCREENSAVER_BENCHMARK=1 ./screensaver`. El
+reporte imprime tiempo secuencial, tiempo paralelo y la aceleracion estimada
+para cada algoritmo cuando se usa el modo comparativo.
+
 La configuracion compartida de cada estacion esta en `src/season.cpp`. Los
 elementos nuevos deben consultar `SeasonSystem` y `SeasonProfile` para adaptar
 su cantidad, color o comportamiento sin duplicar la logica de estaciones.
