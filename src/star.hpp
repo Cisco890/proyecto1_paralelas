@@ -8,8 +8,11 @@
 
 struct StarTextures {
     std::vector<SDL_Texture*> frames;
+    std::vector<SDL_Texture*> shootingFrames;
     int width;
     int height;
+    int shootingWidth;
+    int shootingHeight;
 };
 
 struct Star {
@@ -17,6 +20,7 @@ struct Star {
     float verticalPosition;
     float visualSize;
     Uint32 animationOffset;
+    bool shootingStar;
 };
 
 // La textura es opcional. Si no se carga, las estrellas se dibujan como
@@ -24,7 +28,8 @@ struct Star {
 bool loadStarTextures(
     StarTextures& textures,
     SDL_Renderer* renderer,
-    const std::vector<const char*>& framePaths
+    const std::vector<const char*>& framePaths,
+    const std::vector<const char*>& shootingFramePaths = {}
 );
 
 void destroyStarTextures(StarTextures& textures);

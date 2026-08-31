@@ -132,6 +132,25 @@ int main() {
     );
     StarTextures starTextures = {};
 
+    if (!loadStarTextures(
+            starTextures,
+            renderer,
+            {
+                "assets/sky/blinking_star_1.png",
+                "assets/sky/blinking_star_2.png"
+            },
+            {
+                "assets/sky/shooting_star_frame_1.png",
+                "assets/sky/shooting_star_frame_2.png"
+            }
+        )) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     if (!loadTree(tree, renderer, "assets/tree/tree.png")) {
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -187,6 +206,33 @@ int main() {
     redBird.width = 90;
     redBird.height = 90;
     birds.push_back(redBird);
+
+    Bird blueBird;
+    if (!loadAnimatedBird(
+            blueBird,
+            renderer,
+            {{
+                "assets/animals/blue_bird_frame_1.png",
+                "assets/animals/blue_bird_frame_2.png",
+                "assets/animals/blue_bird_frame_2.png"
+            }},
+            static_cast<float>(displayBounds.w) * 0.62f,
+            static_cast<float>(displayBounds.h) * 0.18f,
+            180
+        )) {
+        for (Bird& currentBird : birds) destroyBird(currentBird);
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+    // Los cuadros azules tambien son de 1254x1254; 90x90 mantiene la misma
+    // escala visual del pajaro rojo y queda apenas por encima de los insectos.
+    blueBird.width = 90;
+    blueBird.height = 90;
+    birds.push_back(blueBird);
 
     FlowerTextures flowerTextures;
 

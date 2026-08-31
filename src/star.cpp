@@ -32,6 +32,37 @@ void renderStar(
     );
     const Uint8 finalOpacity = static_cast<Uint8>(opacity * twinkle);
 
+    if (star.shootingStar && !textures.shootingFrames.empty()) {
+        constexpr Uint32 cycleDuration = 10000;
+        constexpr Uint32 flightDuration = 1400;
+        const Uint32 cycle = (currentTicks + star.animationOffset) % cycleDuration;
+        if (cycle < flightDuration) {
+            const float progress = static_cast<float>(cycle) / flightDuration;
+            const int headX = static_cast<int>(
+                (1.10f - progress * 1.20f) * screenWidth
+            );
+            const int headY = static_cast<int>(
+                (0.08f + star.verticalPosition * 0.46f + progress * 0.24f) * skyHeight
+            );
+            const Uint8 shootingOpacity = static_cast<Uint8>(
+                opacity * (1.0f - progress)
+            );
+            const std::size_t frame =
+                ((currentTicks + star.animationOffset) / 180) %
+                textures.shootingFrames.size();
+            SDL_Texture* shootingTexture = textures.shootingFrames[frame];
+            SDL_Rect destination = {
+                headX - textures.shootingWidth / 2,
+                headY - textures.shootingHeight / 2,
+                textures.shootingWidth,
+                textures.shootingHeight
+            };
+            SDL_SetTextureAlphaMod(shootingTexture, shootingOpacity);
+            SDL_RenderCopy(renderer, shootingTexture, nullptr, &destination);
+            SDL_SetTextureAlphaMod(shootingTexture, 255);
+        }
+    }
+
     if (!textures.frames.empty()) {
         constexpr Uint32 frameDuration = 250;
         const std::size_t frame =
@@ -74,27 +105,43 @@ void renderStar(
 bool loadStarTextures(
     StarTextures& textures,
     SDL_Renderer* renderer,
-    const std::vector<const char*>& framePaths
+    const std::vector<const char*>& framePaths,
+    const std::vector<const char*>& shootingFramePaths
 ) {
     destroyStarTextures(textures);
     if (framePaths.empty()) return true;
 
-    for (const char* path : framePaths) {
-        SDL_Texture* texture = IMG_LoadTexture(renderer, path);
-        if (texture == nullptr) {
-            std::cerr << "Error cargando estrellas: "
-                      << IMG_GetError() << std::endl;
-            destroyStarTextures(textures);
-            return false;
+    auto loadFrames = [&](const std::vector<const char*>& paths,
+                          std::vector<SDL_Texture*>& destination) {
+        for (const char* path : paths) {
+            SDL_Texture* texture = IMG_LoadTexture(renderer, path);
+            if (texture == nullptr) return false;
+            destination.push_back(texture);
         }
-        textures.frames.push_back(texture);
+        return true;
+    };
+
+    if (!loadFrames(framePaths, textures.frames) ||
+        !loadFrames(shootingFramePaths, textures.shootingFrames)) {
+        std::cerr << "Error cargando estrellas: " << IMG_GetError() << std::endl;
+        destroyStarTextures(textures);
+        return false;
     }
 
-    if (SDL_QueryTexture(
+    if (!textures.frames.empty() && SDL_QueryTexture(
             textures.frames.front(), nullptr, nullptr,
             &textures.width, &textures.height
         ) != 0) {
         std::cerr << "Error obteniendo dimensiones de la estrella: "
+                  << SDL_GetError() << std::endl;
+        destroyStarTextures(textures);
+        return false;
+    }
+    if (!textures.shootingFrames.empty() && SDL_QueryTexture(
+            textures.shootingFrames.front(), nullptr, nullptr,
+            &textures.shootingWidth, &textures.shootingHeight
+        ) != 0) {
+        std::cerr << "Error obteniendo dimensiones de estrella fugaz: "
                   << SDL_GetError() << std::endl;
         destroyStarTextures(textures);
         return false;
@@ -108,8 +155,15 @@ void destroyStarTextures(StarTextures& textures) {
         texture = nullptr;
     }
     textures.frames.clear();
+    for (SDL_Texture*& texture : textures.shootingFrames) {
+        if (texture != nullptr) SDL_DestroyTexture(texture);
+        texture = nullptr;
+    }
+    textures.shootingFrames.clear();
     textures.width = 0;
     textures.height = 0;
+    textures.shootingWidth = 0;
+    textures.shootingHeight = 0;
 }
 
 std::vector<Star> createStarField(std::size_t count) {
@@ -128,7 +182,8 @@ std::vector<Star> createStarField(std::size_t count) {
             horizontal(generator),
             vertical(generator),
             size(generator),
-            offset(generator)
+            offset(generator),
+            index % 24 == 0
         });
     }
     return stars;
