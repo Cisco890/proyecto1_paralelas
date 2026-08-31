@@ -7,6 +7,24 @@
 #include <thread>
 #include <vector>
 
+namespace {
+void updateFlowerRange(
+    std::vector<Flower>& flowers,
+    const FlowerTextures& textures,
+    int screenWidth,
+    int screenHeight,
+    int groundY,
+    std::size_t begin,
+    std::size_t end
+) {
+    for (std::size_t index = begin; index < end; ++index) {
+        updateFlowerPosition(
+            flowers[index], textures, screenWidth, screenHeight, groundY
+        );
+    }
+}
+}
+
 bool loadFlowerTextures(
     FlowerTextures& textures,
     SDL_Renderer* renderer,
@@ -79,6 +97,18 @@ std::vector<Flower> createFlowerField(std::size_t count) {
     return flowers;
 }
 
+void updateFlowerPositionsSequential(
+    std::vector<Flower>& flowers,
+    const FlowerTextures& textures,
+    int screenWidth,
+    int screenHeight,
+    int groundY
+) {
+    updateFlowerRange(
+        flowers, textures, screenWidth, screenHeight, groundY, 0, flowers.size()
+    );
+}
+
 void updateFlowerPositionsParallel(
     std::vector<Flower>& flowers,
     const FlowerTextures& textures,
@@ -104,11 +134,9 @@ void updateFlowerPositionsParallel(
         const std::size_t end = std::min(begin + chunkSize, flowers.size());
 
         workers.emplace_back([&, begin, end]() {
-            for (std::size_t index = begin; index < end; ++index) {
-                updateFlowerPosition(
-                    flowers[index], textures, screenWidth, screenHeight, groundY
-                );
-            }
+            updateFlowerRange(
+                flowers, textures, screenWidth, screenHeight, groundY, begin, end
+            );
         });
     }
 

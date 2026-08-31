@@ -18,6 +18,43 @@ const char* autumnPaths[3] = {
     "assets/tree/autum_leaf_2.png",
     "assets/tree/autum_leaf_3.png"
 };
+
+void updateLeafRange(std::vector<Leaf>& leaves, const LeafTextures& textures,
+                     const SDL_Rect& treeDest, LeafSeason season,
+                     float deltaSeconds, Uint32 currentTicks,
+                     std::size_t begin, std::size_t end) {
+    for (std::size_t i = begin; i < end; ++i) {
+        Leaf& leaf = leaves[i];
+        if (season == LeafSeason::Spring && leaf.falling) {
+            leaf.settled = false;
+            leaf.y += leaf.fallSpeed * deltaSeconds / 100.0f;
+            if (leaf.y > 1.12f) {
+                leaf.y = -0.08f;
+                leaf.x = 0.18f + static_cast<float>((i * 53) % 64) / 100.0f;
+            }
+        } else if (season == LeafSeason::Autumn && leaf.autumnLeaf && !leaf.settled) {
+            leaf.y += leaf.fallSpeed * deltaSeconds / 100.0f;
+            if (leaf.y >= 0.96f) {
+                leaf.y = 0.96f + static_cast<float>(i % 5) * 0.008f;
+                leaf.settled = true;
+            }
+        } else if (season == LeafSeason::Spring && leaf.autumnLeaf) {
+            // Al salir de otono se vacian las pilas para que vuelvan
+            // a formarse gradualmente en la siguiente temporada.
+            leaf.settled = false;
+            if (!leaf.falling) {
+                leaf.y = 0.10f + static_cast<float>((i * 31) % 45) / 100.0f;
+            }
+            leaf.phase += deltaSeconds * 1.5f;
+        } else if (season == LeafSeason::Spring && !leaf.falling) {
+            leaf.phase += deltaSeconds * 1.5f;
+        }
+        const float sway = std::sin(currentTicks * 0.0025f + leaf.phase) * leaf.drift;
+        const int size = std::max(4, textures.width * 2);
+        leaf.dest = {treeDest.x + static_cast<int>(leaf.x * treeDest.w + sway) - size / 2,
+                     treeDest.y + static_cast<int>(leaf.y * treeDest.h), size, size};
+    }
+}
 }
 
 bool loadLeafTextures(SDL_Renderer* renderer, LeafTextures& textures) {
@@ -73,6 +110,15 @@ std::vector<Leaf> createLeafField(std::size_t count) {
     return leaves;
 }
 
+void updateLeavesSequential(std::vector<Leaf>& leaves, const LeafTextures& textures,
+                            const SDL_Rect& treeDest, LeafSeason season,
+                            float deltaSeconds, Uint32 currentTicks) {
+    if (leaves.empty()) return;
+    updateLeafRange(
+        leaves, textures, treeDest, season, deltaSeconds, currentTicks, 0, leaves.size()
+    );
+}
+
 void updateLeavesParallel(std::vector<Leaf>& leaves, const LeafTextures& textures,
                           const SDL_Rect& treeDest, LeafSeason season,
                           float deltaSeconds, Uint32 currentTicks) {
@@ -89,37 +135,9 @@ void updateLeavesParallel(std::vector<Leaf>& leaves, const LeafTextures& texture
         const std::size_t begin = w * chunk;
         const std::size_t end = std::min(begin + chunk, leaves.size());
         workers.emplace_back([&, begin, end]() {
-            for (std::size_t i = begin; i < end; ++i) {
-                Leaf& leaf = leaves[i];
-                if (season == LeafSeason::Spring && leaf.falling) {
-                    leaf.settled = false;
-                    leaf.y += leaf.fallSpeed * deltaSeconds / 100.0f;
-                    if (leaf.y > 1.12f) {
-                        leaf.y = -0.08f;
-                        leaf.x = 0.18f + static_cast<float>((i * 53) % 64) / 100.0f;
-                    }
-                } else if (season == LeafSeason::Autumn && leaf.autumnLeaf && !leaf.settled) {
-                    leaf.y += leaf.fallSpeed * deltaSeconds / 100.0f;
-                    if (leaf.y >= 0.96f) {
-                        leaf.y = 0.96f + static_cast<float>(i % 5) * 0.008f;
-                        leaf.settled = true;
-                    }
-                } else if (season == LeafSeason::Spring && leaf.autumnLeaf) {
-                    // Al salir de otono se vacian las pilas para que vuelvan
-                    // a formarse gradualmente en la siguiente temporada.
-                    leaf.settled = false;
-                    if (!leaf.falling) {
-                        leaf.y = 0.10f + static_cast<float>((i * 31) % 45) / 100.0f;
-                    }
-                    leaf.phase += deltaSeconds * 1.5f;
-                } else if (season == LeafSeason::Spring && !leaf.falling) {
-                    leaf.phase += deltaSeconds * 1.5f;
-                }
-                const float sway = std::sin(currentTicks * 0.0025f + leaf.phase) * leaf.drift;
-                const int size = std::max(4, textures.width * 2);
-                leaf.dest = {treeDest.x + static_cast<int>(leaf.x * treeDest.w + sway) - size / 2,
-                             treeDest.y + static_cast<int>(leaf.y * treeDest.h), size, size};
-            }
+            updateLeafRange(
+                leaves, textures, treeDest, season, deltaSeconds, currentTicks, begin, end
+            );
         });
     }
     for (auto& worker : workers) worker.join();

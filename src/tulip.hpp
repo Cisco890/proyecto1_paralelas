@@ -16,6 +16,9 @@ struct Tulip {
 bool loadTulipTextures(TulipTextures& textures, SDL_Renderer* renderer);
 void destroyTulipTextures(TulipTextures& textures);
 std::vector<Tulip> createTulipField(std::size_t count);
+void updateTulipPositionsSequential(std::vector<Tulip>& tulips,
+                                    const TulipTextures& textures,
+                                    int screenWidth, int screenHeight, int groundY);
 void updateTulipPositionsParallel(std::vector<Tulip>& tulips,
                                   const TulipTextures& textures,
                                   int screenWidth, int screenHeight, int groundY);

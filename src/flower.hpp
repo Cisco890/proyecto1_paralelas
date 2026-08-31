@@ -38,6 +38,14 @@ void updateFlowerPosition(
 
 std::vector<Flower> createFlowerField(std::size_t count);
 
+void updateFlowerPositionsSequential(
+    std::vector<Flower>& flowers,
+    const FlowerTextures& textures,
+    int screenWidth,
+    int screenHeight,
+    int groundY
+);
+
 void updateFlowerPositionsParallel(
     std::vector<Flower>& flowers,
     const FlowerTextures& textures,

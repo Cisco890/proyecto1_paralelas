@@ -31,6 +31,15 @@ bool loadLeafTextures(SDL_Renderer* renderer, LeafTextures& textures);
 void destroyLeafTextures(LeafTextures& textures);
 std::vector<Leaf> createLeafField(std::size_t count);
 
+void updateLeavesSequential(
+    std::vector<Leaf>& leaves,
+    const LeafTextures& textures,
+    const SDL_Rect& treeDest,
+    LeafSeason season,
+    float deltaSeconds,
+    Uint32 currentTicks
+);
+
 void updateLeavesParallel(
     std::vector<Leaf>& leaves,
     const LeafTextures& textures,

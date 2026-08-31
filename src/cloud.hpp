@@ -32,6 +32,13 @@ bool loadCloudTextures(
 );
 void destroyCloudTextures(CloudTextures& textures);
 std::vector<Cloud> createCloudField(std::size_t count);
+void updateCloudPositionsSequential(
+    std::vector<Cloud>& clouds,
+    const CloudTextures& textures,
+    int screenWidth,
+    int screenHeight,
+    float deltaSeconds
+);
 void updateCloudPositionsParallel(
     std::vector<Cloud>& clouds,
     const CloudTextures& textures,
