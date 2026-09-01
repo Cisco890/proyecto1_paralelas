@@ -12,6 +12,12 @@ integrantes
 *.so
 *.d
 *.gch
+*.gcda
+*.gcno
+*.gcov
+core
+core.*
+vgcore.*
 
 # Build
 build/
@@ -28,6 +34,7 @@ compile_commands.json
 *.swo
 *~
 .DS_Store
+Thumbs.db
 .clangd/
 
 # Logs / temporales

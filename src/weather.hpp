@@ -33,7 +33,14 @@ bool loadWeatherSystem(
 );
 void setWeatherSpawnHeight(WeatherSystem& system, float normalizedY);
 void destroyWeatherSystem(WeatherSystem& system);
-void updateWeatherSystem(
+void updateWeatherSystemSequential(
+    WeatherSystem& system,
+    int screenWidth,
+    int screenHeight,
+    float deltaSeconds,
+    float intensity
+);
+void updateWeatherSystemParallel(
     WeatherSystem& system,
     int screenWidth,
     int screenHeight,

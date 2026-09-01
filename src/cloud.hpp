@@ -50,7 +50,9 @@ void renderCloud(
     SDL_Renderer* renderer,
     const CloudTextures& textures,
     const Cloud& cloud,
-    bool stormy
+    bool stormy,
+    Uint8 opacity = 255,
+    int verticalOffset = 0
 );
 
 #endif

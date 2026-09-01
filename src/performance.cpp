@@ -134,7 +134,7 @@ BenchmarkSummary benchmarkLeaves() {
         for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
             updateLeavesSequential(
                 sequential, textures, treeDest, LeafSeason::Autumn, 0.016f,
-                static_cast<Uint32>(iteration * 16)
+                static_cast<Uint32>(iteration * 16), 1.0f
             );
         }
     });
@@ -142,7 +142,7 @@ BenchmarkSummary benchmarkLeaves() {
         for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
             updateLeavesParallel(
                 parallel, textures, treeDest, LeafSeason::Autumn, 0.016f,
-                static_cast<Uint32>(iteration * 16)
+                static_cast<Uint32>(iteration * 16), 1.0f
             );
         }
     });

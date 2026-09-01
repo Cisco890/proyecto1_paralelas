@@ -114,7 +114,8 @@ void updateBird(
     }
 }
 
-void renderBird(SDL_Renderer* renderer, const Bird& bird) {
+void renderBird(SDL_Renderer* renderer, const Bird& bird, Uint8 opacity) {
+    if (opacity == 0) return;
     SDL_Rect dest = {
         static_cast<int>(bird.x),
         static_cast<int>(bird.y),
@@ -127,5 +128,7 @@ void renderBird(SDL_Renderer* renderer, const Bird& bird) {
         texture = bird.animationFrames[((SDL_GetTicks() + bird.animationOffset) / 180) %
                                        bird.animationFrames.size()];
     }
+    SDL_SetTextureAlphaMod(texture, opacity);
     SDL_RenderCopy(renderer, texture, nullptr, &dest);
+    SDL_SetTextureAlphaMod(texture, 255);
 }

@@ -70,7 +70,7 @@ std::vector<Cloud> createCloudField(std::size_t count) {
     clouds.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
         clouds.push_back({{}, -0.15f + static_cast<float>((index * 31) % 120) / 100.0f,
-                          -0.15f + static_cast<float>((index * 19) % 2) / 100.0f,
+                          -0.15f + static_cast<float>((index * 19) % 4) * 0.09f,
                           0.012f + static_cast<float>(index % 4) * 0.004f,
                           static_cast<Uint32>(index * 130), index % 2});
     }
@@ -110,7 +110,14 @@ void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
 }
 
 void renderCloud(SDL_Renderer* renderer, const CloudTextures& textures,
-                 const Cloud& cloud, bool stormy) {
+                 const Cloud& cloud, bool stormy, Uint8 opacity,
+                 int verticalOffset) {
+    if (opacity == 0) return;
     const auto& frames = stormy ? textures.rain : textures.normal;
-    SDL_RenderCopy(renderer, frames[cloud.variant], nullptr, &cloud.dest);
+    SDL_Texture* texture = frames[cloud.variant];
+    SDL_Rect destination = cloud.dest;
+    destination.y += verticalOffset;
+    SDL_SetTextureAlphaMod(texture, opacity);
+    SDL_RenderCopy(renderer, texture, nullptr, &destination);
+    SDL_SetTextureAlphaMod(texture, 255);
 }

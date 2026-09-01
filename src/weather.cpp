@@ -2,8 +2,10 @@
 
 #include <SDL2/SDL_image.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <thread>
 
 namespace {
 float pseudoRandom(std::size_t index, unsigned int seed) {
@@ -11,6 +13,20 @@ float pseudoRandom(std::size_t index, unsigned int seed) {
     value = (value ^ (value >> 16u)) * 2246822519u;
     value ^= value >> 13u;
     return static_cast<float>(value & 0xffffu) / 65535.0f;
+}
+
+void updateWeatherRange(WeatherSystem& system, int screenWidth,
+                        int screenHeight, float deltaSeconds,
+                        std::size_t begin, std::size_t end) {
+    for (std::size_t index = begin; index < end; ++index) {
+        WeatherParticle& particle = system.particles[index];
+        particle.y += particle.speed * deltaSeconds / screenHeight;
+        particle.x += particle.drift * deltaSeconds / screenWidth;
+
+        if (particle.y > 1.05f) particle.y = system.spawnY - 0.02f;
+        if (particle.x > 1.02f) particle.x = -0.02f;
+        else if (particle.x < -0.02f) particle.x = 1.02f;
+    }
 }
 }
 
@@ -81,7 +97,7 @@ void destroyWeatherSystem(WeatherSystem& system) {
     system.particles.clear();
 }
 
-void updateWeatherSystem(
+void updateWeatherSystemSequential(
     WeatherSystem& system,
     int screenWidth,
     int screenHeight,
@@ -92,19 +108,41 @@ void updateWeatherSystem(
         return;
     }
 
-    for (WeatherParticle& particle : system.particles) {
-        particle.y += particle.speed * deltaSeconds / screenHeight;
-        particle.x += particle.drift * deltaSeconds / screenWidth;
+    updateWeatherRange(
+        system, screenWidth, screenHeight, deltaSeconds, 0, system.particles.size()
+    );
+}
 
-        if (particle.y > 1.05f) {
-            particle.y = system.spawnY - 0.02f;
-        }
-        if (particle.x > 1.02f) {
-            particle.x = -0.02f;
-        } else if (particle.x < -0.02f) {
-            particle.x = 1.02f;
-        }
+void updateWeatherSystemParallel(
+    WeatherSystem& system, int screenWidth, int screenHeight,
+    float deltaSeconds, float intensity
+) {
+    if (intensity <= 0.0f || screenWidth <= 0 || screenHeight <= 0) return;
+
+    const std::size_t particleCount = system.particles.size();
+    if (particleCount == 0) return;
+    const unsigned int available = std::max(1u, std::thread::hardware_concurrency());
+    const std::size_t workerCount = std::min<std::size_t>(
+        particleCount, std::min<unsigned int>(available, 8u)
+    );
+    if (workerCount < 2) {
+        updateWeatherSystemSequential(
+            system, screenWidth, screenHeight, deltaSeconds, intensity
+        );
+        return;
     }
+
+    const std::size_t chunkSize = (particleCount + workerCount - 1) / workerCount;
+    std::vector<std::thread> workers;
+    workers.reserve(workerCount);
+    for (std::size_t worker = 0; worker < workerCount; ++worker) {
+        const std::size_t begin = worker * chunkSize;
+        const std::size_t end = std::min(begin + chunkSize, particleCount);
+        workers.emplace_back([&, begin, end]() {
+            updateWeatherRange(system, screenWidth, screenHeight, deltaSeconds, begin, end);
+        });
+    }
+    for (std::thread& worker : workers) worker.join();
 }
 
 void renderWeatherSystem(

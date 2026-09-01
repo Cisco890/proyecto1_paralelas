@@ -36,10 +36,10 @@ make clean
 
 ### Controles de estaciones
 
-Las estaciones cambian automaticamente cada 30 segundos. Durante los ultimos
-8 segundos se mezclan gradualmente los colores y la presencia de los elementos:
-las flores desaparecen una por una, mientras la abeja y la mariposa ajustan su
-opacidad. Tambien se pueden probar manualmente desde la ventana:
+Las estaciones cambian automaticamente al completar un ciclo de sol y luna
+(60 segundos). Durante los ultimos 15 segundos, que corresponden al tramo
+nocturno, se mezclan gradualmente los colores antes del siguiente amanecer.
+Tambien se pueden probar manualmente desde la ventana:
 
 - `1`: primavera
 - `2`: verano
@@ -55,6 +55,8 @@ Se agregaron rutas secuenciales para las actualizaciones de:
 - tulipanes
 - nubes
 - hojas
+- lluvia y nieve
+- fauna (aves, abeja y mariposa)
 
 La animacion ahora puede ejecutarse en cualquiera de los dos modos:
 
@@ -84,6 +86,17 @@ para cada algoritmo cuando se usa el modo comparativo.
 La configuracion compartida de cada estacion esta en `src/season.cpp`. Los
 elementos nuevos deben consultar `SeasonSystem` y `SeasonProfile` para adaptar
 su cantidad, color o comportamiento sin duplicar la logica de estaciones.
+El ciclo se mantiene siempre en este orden: primavera, verano, otono e
+invierno. Durante primavera las flores y tulipanes crecen gradualmente;
+en otono caen las hojas; en invierno la lluvia es la precipitacion principal,
+y primavera/verano usan mayor intensidad de luz solar. La presencia de aves,
+abejas y mariposas tambien se calcula desde el perfil de cada estacion.
+
+La logica queda separada por responsabilidad: `src/season.cpp` calcula el
+estado estacional, `src/weather.cpp` actualiza las particulas y
+`src/wildlife_update.cpp` actualiza la fauna. Los dos ultimos modulos exponen
+rutas secuenciales y paralelas, seleccionadas con `--sequential` o
+`--parallel`.
 El arbol usa la textura base. Las hojas animadas de primavera y las hojas de
 otono, que se acumulan en el suelo, se administran desde `src/leaf.cpp`. La posicion y la
 caida de cada hoja se actualizan en paralelo por bloques independientes.

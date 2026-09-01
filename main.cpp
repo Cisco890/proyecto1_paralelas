@@ -21,6 +21,7 @@
 #include "src/tree.hpp"
 #include "src/tulip.hpp"
 #include "src/weather.hpp"
+#include "src/wildlife_update.hpp"
 
 namespace {
 float getDaylightFactor(Uint32 ticks) {
@@ -474,7 +475,8 @@ int main(int argc, char* argv[]) {
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
     std::vector<Flower> flowers = createFlowerField(36);
     std::vector<Tulip> tulips = createTulipField(20);
-    std::vector<Cloud> clouds = createCloudField(4);
+    // Durante una tormenta se revelan nubes adicionales hasta cubrir el cielo.
+    std::vector<Cloud> clouds = createCloudField(14);
     std::vector<GrassBlade> grass = createGrassField(72);
     std::vector<Leaf> leaves = createLeafField(72);
     constexpr std::size_t maximumStarCount = 90;
@@ -543,53 +545,45 @@ int main(int argc, char* argv[]) {
             &screenHeight
         );
 
-        const float daylight = getDaylightFactor(currentTicks);
+        const float daylight = getDaylightFactor(currentTicks) * seasonVisual.sunlight;
         const float daytimePresence = std::clamp(
             (daylight - 0.30f) / 0.35f, 0.0f, 1.0f
         );
         const bool isDaytime = daytimePresence > 0.05f;
 
-        if (isDaytime) {
-            for (Bird& currentBird : birds) {
-                updateBird(
-                    currentBird,
-                    screenWidth,
-                    screenHeight,
-                    deltaSeconds
-                );
-            }
-        }
-
         // El suelo comienza al 85% de la altura
         int groundY = static_cast<int>(screenHeight * 0.85);
 
         updateCelestialBody(
-            sun, screenWidth, screenHeight, groundY, currentTicks
+            sun, screenWidth, screenHeight, groundY, currentTicks, seasonVisual.sunScale
         );
         updateCelestialBody(
             moon, screenWidth, screenHeight, groundY, currentTicks
         );
 
-        if (isDaytime) {
-            updateFlyingAnimal(bee, screenWidth, groundY, deltaSeconds, currentTicks);
-            updateFlyingAnimal(
-                butterfly, screenWidth, groundY, deltaSeconds, currentTicks
+        if (executionMode == UpdateExecutionMode::Sequential) {
+            updateWildlifeSequential(
+                birds, bee, butterfly, seasonVisual, isDaytime, screenWidth,
+                screenHeight, groundY, deltaSeconds, currentTicks
+            );
+            updateWeatherSystemSequential(
+                rain, screenWidth, screenHeight, deltaSeconds, seasonVisual.rainIntensity
+            );
+            updateWeatherSystemSequential(
+                snow, screenWidth, screenHeight, deltaSeconds, seasonVisual.snowIntensity
+            );
+        } else {
+            updateWildlifeParallel(
+                birds, bee, butterfly, seasonVisual, isDaytime, screenWidth,
+                screenHeight, groundY, deltaSeconds, currentTicks
+            );
+            updateWeatherSystemParallel(
+                rain, screenWidth, screenHeight, deltaSeconds, seasonVisual.rainIntensity
+            );
+            updateWeatherSystemParallel(
+                snow, screenWidth, screenHeight, deltaSeconds, seasonVisual.snowIntensity
             );
         }
-        updateWeatherSystem(
-            rain,
-            screenWidth,
-            screenHeight,
-            deltaSeconds,
-            seasonVisual.rainIntensity
-        );
-        updateWeatherSystem(
-            snow,
-            screenWidth,
-            screenHeight,
-            deltaSeconds,
-            seasonVisual.snowIntensity
-        );
         if (executionMode == UpdateExecutionMode::Sequential) {
             updateCloudPositionsSequential(
                 clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
@@ -602,20 +596,24 @@ int main(int argc, char* argv[]) {
 
         updateTreePosition(tree, screenWidth, groundY);
 
-        LeafSeason leafSeason = LeafSeason::Spring;
-        if (seasonSystem.current == Season::Autumn) {
-            leafSeason = LeafSeason::Autumn;
-        }
-        // Las hojas se actualizan en paralelo: cada hilo trabaja sobre un bloque
-        // independiente y la fase de animacion no toca SDL.
-        if (executionMode == UpdateExecutionMode::Sequential) {
-            updateLeavesSequential(
-                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
-            );
-        } else {
-            updateLeavesParallel(
-                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
-            );
+        const bool hasTreeLeaves = seasonSystem.current == Season::Spring ||
+            seasonSystem.current == Season::Summer ||
+            seasonSystem.current == Season::Autumn;
+        LeafSeason leafSeason = seasonSystem.current == Season::Autumn
+            ? LeafSeason::Autumn
+            : LeafSeason::Spring;
+        if (hasTreeLeaves) {
+            if (executionMode == UpdateExecutionMode::Sequential) {
+                updateLeavesSequential(
+                    leaves, leafTextures, tree.dest, leafSeason, deltaSeconds,
+                    currentTicks, seasonVisual.seasonProgress
+                );
+            } else {
+                updateLeavesParallel(
+                    leaves, leafTextures, tree.dest, leafSeason, deltaSeconds,
+                    currentTicks, seasonVisual.seasonProgress
+                );
+            }
         }
 
         // Cada flor actualiza su posicion en paralelo cuando cambia la ventana.
@@ -702,7 +700,9 @@ int main(int argc, char* argv[]) {
         );
 
         // Se dibujan al fondo para que las nubes y el arbol puedan ocultarlos.
-        renderCelestialBody(renderer, sun);
+        renderCelestialBody(
+            renderer, sun, static_cast<Uint8>(seasonVisual.sunlight * 255.0f)
+        );
         renderCelestialBody(renderer, moon);
 
         // Suelo temporal
@@ -757,23 +757,49 @@ int main(int argc, char* argv[]) {
             );
         }
 
-        const bool springIsCurrent = seasonSystem.current == Season::Spring;
-        const bool springIsNext = getNextSeason(seasonSystem.current) == Season::Spring;
-        float tulipPresence = springIsCurrent ? 1.0f : 0.0f;
-        if (springIsNext) tulipPresence = seasonVisual.transitionProgress;
         for (const Tulip& tulip : tulips) {
             renderTulip(renderer, tulipTextures, tulip, currentTicks,
-                        static_cast<Uint8>(tulipPresence * 255.0f));
+                        static_cast<Uint8>(seasonVisual.tulipPresence * 255.0f));
         }
 
         // Las nubes forman parte del fondo; el arbol se dibuja encima.
-        const bool stormy = seasonVisual.rainIntensity > 0.0f ||
-                            seasonVisual.snowIntensity > 0.0f;
+        const bool stormy = seasonVisual.rainIntensity > 0.01f;
         // La precipitación se dibuja antes que las nubes para que quede detrás.
         renderWeatherSystem(renderer, rain, seasonVisual.rainIntensity);
-        renderWeatherSystem(renderer, snow, seasonVisual.snowIntensity);
-        for (const Cloud& cloud : clouds) {
-            renderCloud(renderer, cloudTextures, cloud, stormy);
+        const std::size_t normalClouds = std::max<std::size_t>(
+            1, static_cast<std::size_t>(std::ceil(4.0f * seasonVisual.cloudCoverage))
+        );
+        constexpr std::size_t springCloudCount = 3;
+        if (stormy) {
+            // Al terminar invierno, las nubes normales aparecen mientras las
+            // de lluvia se desvanecen; primavera no entra con un corte visual.
+            const Uint8 normalOpacity = static_cast<Uint8>(
+                (1.0f - seasonVisual.rainProgress) * 255.0f
+            );
+            for (std::size_t index = 0;
+                 index < std::min(springCloudCount, clouds.size()); ++index) {
+                renderCloud(renderer, cloudTextures, clouds[index], false, normalOpacity);
+            }
+            const std::size_t rainClouds = static_cast<std::size_t>(
+                springCloudCount + seasonVisual.rainProgress *
+                    (clouds.size() - springCloudCount)
+            );
+            const Uint8 rainOpacity = static_cast<Uint8>(
+                seasonVisual.rainProgress * 255.0f
+            );
+            const int stormCloudOffset = -static_cast<int>(screenHeight * 0.10f);
+            for (std::size_t index = 0;
+                 index < std::min(rainClouds, clouds.size()); ++index) {
+                renderCloud(
+                    renderer, cloudTextures, clouds[index], true, rainOpacity,
+                    stormCloudOffset
+                );
+            }
+        } else {
+            for (std::size_t index = 0;
+                 index < std::min(normalClouds, clouds.size()); ++index) {
+                renderCloud(renderer, cloudTextures, clouds[index], false);
+            }
         }
 
         renderTree(renderer, tree);
@@ -781,6 +807,10 @@ int main(int argc, char* argv[]) {
         std::size_t visibleLeaves = 0;
         Uint8 leafOpacity = 255;
         if (seasonSystem.current == Season::Spring) {
+            visibleLeaves = static_cast<std::size_t>(
+                leaves.size() * seasonVisual.springArrivalProgress
+            );
+        } else if (seasonSystem.current == Season::Summer) {
             visibleLeaves = 72;
         } else if (seasonSystem.current == Season::Autumn) {
             visibleLeaves = 48;
@@ -790,9 +820,12 @@ int main(int argc, char* argv[]) {
             );
         }
         renderLeaves(renderer, leafTextures, leaves, leafSeason,
-                     visibleLeaves, currentTicks, leafOpacity);
+                     visibleLeaves, currentTicks, leafOpacity,
+                     seasonSystem.current == Season::Autumn
+                         ? seasonVisual.transitionProgress
+                         : 0.0f);
 
-        if (isDaytime) {
+        if (isDaytime && seasonVisual.birdPresence > 0.01f) {
             renderFlyingAnimal(
                 renderer,
                 bee,
@@ -807,7 +840,10 @@ int main(int argc, char* argv[]) {
             );
 
             for (const Bird& currentBird : birds) {
-                renderBird(renderer, currentBird);
+                renderBird(
+                    renderer, currentBird,
+                    static_cast<Uint8>(seasonVisual.birdPresence * daytimePresence * 255.0f)
+                );
             }
         }
 
