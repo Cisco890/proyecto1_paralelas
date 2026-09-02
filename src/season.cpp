@@ -1,15 +1,13 @@
 #include "season.hpp"
 
-#include "celestial_body.hpp"
-
 #include <array>
 
 namespace {
 constexpr std::array<SeasonProfile, 4> profiles = {{
-    {"Primavera", {135, 206, 235, 255}, {76, 140, 74, 255}, 36, 1.0f, 1.0f, 0.9f, 72, 0.0f, 0.0f, 0.92f, 0.95f, 0.75f},
-    {"Verano",    {42, 174, 245, 255},  {57, 145, 48, 255},  12, 0.8f, 0.7f, 1.0f, 58, 0.0f, 0.0f, 1.00f, 1.35f, 0.35f},
-    {"Otono",     {190, 145, 92, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.1f, 0.45f, 20, 0.0f, 0.0f, 0.62f, 0.75f, 0.65f},
-    {"Invierno",  {180, 205, 220, 255}, {220, 230, 235, 255}, 0, 0.0f, 0.0f, 0.08f, 0, 1.00f, 0.0f, 0.40f, 0.60f, 0.90f}
+    {"Primavera", {135, 206, 235, 255}, {76, 140, 74, 255}, 36, 1.0f, 1.0f, 72, 0.65f, 0.0f},
+    {"Verano",    {80, 180, 235, 255},  {64, 132, 62, 255},  6, 0.8f, 0.7f, 58, 0.0f, 0.0f},
+    {"Otono",     {135, 206, 235, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.2f, 20, 0.0f, 0.0f},
+    {"Invierno",  {180, 205, 220, 255}, {180, 205, 245, 255}, 0, 0.0f, 0.0f,  0, 0.0f, 1.0f}
 }};
 
 Uint8 mixChannel(Uint8 from, Uint8 to, float progress) {
@@ -27,21 +25,11 @@ SDL_Color mixColor(SDL_Color from, SDL_Color to, float progress) {
 }
 
 SeasonSystem createSeasonSystem(Uint32 currentTicks) {
-    // Cada estacion dura un ciclo completo de sol y luna. La transicion se
-    // realiza de noche y termina al amanecer para disimular el cambio.
-    constexpr Uint32 sunriseOffset = DAY_NIGHT_CYCLE_MILLISECONDS * 3 / 4;
-    const Uint32 cycleBase = currentTicks -
-        (currentTicks % DAY_NIGHT_CYCLE_MILLISECONDS);
-    // El sol inicia su recorrido en el 75% del ciclo. Se usa ese instante
-    // como frontera estacional para que el nuevo escenario nazca al amanecer.
-    Uint32 cycleStart = cycleBase + sunriseOffset;
-    if (currentTicks < cycleStart) cycleStart -= DAY_NIGHT_CYCLE_MILLISECONDS;
-    return {
-        Season::Spring,
-        cycleStart,
-        DAY_NIGHT_CYCLE_MILLISECONDS,
-        15000
-    };
+    // Cada estacion dura 30 segundos. Se puede cambiar desde un archivo de
+    // configuracion en el futuro sin afectar a los elementos del escenario.
+    // Las estaciones duran 45 segundos y la transicion ocupa los ultimos
+    // 12 segundos para que los cambios visuales sean mas lentos.
+    return {Season::Spring, currentTicks, 30000, 6000};
 }
 
 void updateSeason(SeasonSystem& system, Uint32 currentTicks) {
@@ -85,47 +73,20 @@ SeasonVisualState getSeasonVisualState(
         }
     }
 
-    const float elapsedProgress = std::min(
-        1.0f, static_cast<float>(elapsed) / static_cast<float>(system.durationMilliseconds)
-    );
-    // La flora inicia su crecimiento cuando empieza primavera, no durante
-    // la transicion de invierno. Asi el orden de las estaciones es visible.
-    const float flowerGrowth = system.current == Season::Spring
-        ? std::min(1.0f, elapsedProgress * 1.8f)
-        : 1.0f;
-    const float tulipPresence = system.current == Season::Spring
-        ? flowerGrowth
-        : 0.0f;
-    // La lluvia se forma al iniciar invierno y se disipa durante la
-    // transicion nocturna hacia primavera, sin cortar las particulas de golpe.
-    const float rainEntry = std::min(1.0f, static_cast<float>(elapsed) / 5000.0f);
-    const float rainProgress = system.current == Season::Winter
-        ? rainEntry * (1.0f - progress)
-        : 0.0f;
-    const float springArrivalProgress = system.current == Season::Spring
-        ? std::min(1.0f, static_cast<float>(elapsed) / 12000.0f)
-        : 1.0f;
-
     return {
         mixColor(current.skyColor, next.skyColor, progress),
         mixColor(current.groundColor, next.groundColor, progress),
-        system.current == Season::Spring
-            ? static_cast<float>(current.flowerCount) * flowerGrowth
-            : static_cast<float>(current.flowerCount),
-        current.beePresence * springArrivalProgress,
-        current.butterflyPresence * springArrivalProgress,
-        current.birdPresence * springArrivalProgress,
-        static_cast<float>(current.grassCount) * springArrivalProgress,
-        current.rainIntensity * rainProgress,
-        current.snowIntensity,
-        current.sunlight,
-        current.sunScale,
-        current.cloudCoverage,
-        flowerGrowth,
-        tulipPresence,
-        rainProgress,
-        elapsedProgress,
-        springArrivalProgress,
+        current.flowerCount +
+            (static_cast<float>(next.flowerCount) - current.flowerCount) * progress,
+        current.beePresence + (next.beePresence - current.beePresence) * progress,
+        current.butterflyPresence +
+            (next.butterflyPresence - current.butterflyPresence) * progress,
+        current.grassCount +
+            (static_cast<float>(next.grassCount) - current.grassCount) * progress,
+        current.rainIntensity +
+            (next.rainIntensity - current.rainIntensity) * progress,
+        current.snowIntensity +
+            (next.snowIntensity - current.snowIntensity) * progress,
         progress
     };
 }

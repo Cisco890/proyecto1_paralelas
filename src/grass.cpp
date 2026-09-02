@@ -9,35 +9,38 @@
 bool loadGrassTextures(
     GrassTextures& textures,
     SDL_Renderer* renderer,
-    const std::array<const char*, 3>& paths
+    const std::array<std::array<const char*, 3>, 3>& paths
 ) {
     textures = {};
-    for (std::size_t index = 0; index < textures.frames.size(); ++index) {
-        textures.frames[index] = IMG_LoadTexture(renderer, paths[index]);
-        if (textures.frames[index] == nullptr) {
-            std::cerr << "Error cargando grama: " << IMG_GetError() << std::endl;
+    for (std::size_t season = 0; season < textures.frames.size(); ++season) {
+        for (std::size_t frame = 0; frame < textures.frames[season].size(); ++frame) {
+            textures.frames[season][frame] = IMG_LoadTexture(renderer, paths[season][frame]);
+            if (textures.frames[season][frame] == nullptr) {
+                std::cerr << "Error cargando grama: " << IMG_GetError() << std::endl;
+                destroyGrassTextures(textures);
+                return false;
+            }
+        }
+
+        if (SDL_QueryTexture(textures.frames[season][0], nullptr, nullptr,
+                             &textures.widths[season],
+                             &textures.heights[season]) != 0) {
+            std::cerr << "Error obteniendo dimensiones de la grama: "
+                      << SDL_GetError() << std::endl;
             destroyGrassTextures(textures);
             return false;
         }
-    }
-
-    if (SDL_QueryTexture(
-            textures.frames[0], nullptr, nullptr,
-            &textures.width, &textures.height
-        ) != 0) {
-        std::cerr << "Error obteniendo dimensiones de la grama: "
-                  << SDL_GetError() << std::endl;
-        destroyGrassTextures(textures);
-        return false;
     }
     return true;
 }
 
 void destroyGrassTextures(GrassTextures& textures) {
-    for (SDL_Texture*& frame : textures.frames) {
-        if (frame != nullptr) {
-            SDL_DestroyTexture(frame);
-            frame = nullptr;
+    for (auto& season : textures.frames) {
+        for (SDL_Texture*& frame : season) {
+            if (frame != nullptr) {
+                SDL_DestroyTexture(frame);
+                frame = nullptr;
+            }
         }
     }
 }
@@ -63,8 +66,10 @@ void renderGrassField(
     int screenHeight,
     int groundY,
     Uint32 currentTicks,
-    float visibleCount
+    float visibleCount,
+    std::size_t seasonIndex
 ) {
+    seasonIndex = std::min(seasonIndex, textures.frames.size() - 1);
     const float limited = std::min(visibleCount, static_cast<float>(grass.size()));
     const std::size_t count = static_cast<std::size_t>(std::ceil(limited));
     constexpr int scale = 3;
@@ -72,8 +77,8 @@ void renderGrassField(
     for (std::size_t index = 0; index < count; ++index) {
         const GrassBlade& blade = grass[index];
         const std::size_t frame =
-            ((currentTicks + blade.animationOffset) / 180) % textures.frames.size();
-        SDL_Texture* texture = textures.frames[frame];
+            ((currentTicks + blade.animationOffset) / 180) % textures.frames[seasonIndex].size();
+        SDL_Texture* texture = textures.frames[seasonIndex][frame];
         Uint8 opacity = 255;
         if (index + 1 == count) {
             const float fraction = limited - std::floor(limited);
@@ -86,9 +91,9 @@ void renderGrassField(
             static_cast<int>(blade.horizontalPosition * screenWidth),
             groundY + static_cast<int>(
                 blade.verticalPosition * (screenHeight - groundY)
-            ) - textures.height * scale,
-            textures.width * scale,
-            textures.height * scale
+            ) - textures.heights[seasonIndex] * scale,
+            textures.widths[seasonIndex] * scale,
+            textures.heights[seasonIndex] * scale
         };
         SDL_RenderCopy(renderer, texture, nullptr, &destination);
         SDL_SetTextureAlphaMod(texture, 255);

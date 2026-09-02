@@ -80,8 +80,7 @@ void updateCelestialBody(
     int screenWidth,
     int screenHeight,
     int groundY,
-    Uint32 currentTicks,
-    float sizeScale
+    Uint32 currentTicks
 ) {
     if (screenWidth <= 0 || screenHeight <= 0) {
         body.visible = false;
@@ -92,12 +91,11 @@ void updateCelestialBody(
     body.visible = progress >= 0.0f;
     if (!body.visible) return;
 
-    const float baseDiameter = std::clamp(
+    const float diameter = std::clamp(
         static_cast<float>(std::min(screenWidth, screenHeight)) * 0.09f,
         48.0f,
         110.0f
     );
-    const float diameter = baseDiameter * sizeScale;
     const float radius = diameter * 0.5f;
     const float centerX = -radius +
         (static_cast<float>(screenWidth) + diameter) * progress;
@@ -115,15 +113,12 @@ void updateCelestialBody(
 
 void renderCelestialBody(
     SDL_Renderer* renderer,
-    const CelestialBody& body,
-    Uint8 opacity
+    const CelestialBody& body
 ) {
-    if (!body.visible || opacity == 0) return;
+    if (!body.visible) return;
 
     if (body.texture != nullptr) {
-        SDL_SetTextureAlphaMod(body.texture, opacity);
         SDL_RenderCopyF(renderer, body.texture, nullptr, &body.destination);
-        SDL_SetTextureAlphaMod(body.texture, 255);
         return;
     }
 
@@ -132,7 +127,7 @@ void renderCelestialBody(
         body.fallbackColor.r,
         body.fallbackColor.g,
         body.fallbackColor.b,
-        opacity
+        body.fallbackColor.a
     );
     const int radius = static_cast<int>(body.destination.w * 0.5f);
     fillCircle(

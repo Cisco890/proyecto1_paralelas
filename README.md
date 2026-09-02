@@ -36,10 +36,10 @@ make clean
 
 ### Controles de estaciones
 
-Las estaciones cambian automaticamente al completar un ciclo de sol y luna
-(60 segundos). Durante los ultimos 15 segundos, que corresponden al tramo
-nocturno, se mezclan gradualmente los colores antes del siguiente amanecer.
-Tambien se pueden probar manualmente desde la ventana:
+Las estaciones cambian automaticamente cada 30 segundos. Durante los ultimos
+8 segundos se mezclan gradualmente los colores y la presencia de los elementos:
+las flores desaparecen una por una, mientras la abeja y la mariposa ajustan su
+opacidad. Tambien se pueden probar manualmente desde la ventana:
 
 - `1`: primavera
 - `2`: verano
@@ -47,7 +47,7 @@ Tambien se pueden probar manualmente desde la ventana:
 - `4`: invierno
 - `Esc`: salir
 
-## Modos De Ejecucion
+### Comparación secuencial vs paralela
 
 Se agregaron rutas secuenciales para las actualizaciones de:
 
@@ -55,8 +55,6 @@ Se agregaron rutas secuenciales para las actualizaciones de:
 - tulipanes
 - nubes
 - hojas
-- lluvia
-- fauna (aves, abeja y mariposa)
 
 La animacion ahora puede ejecutarse en cualquiera de los dos modos:
 
@@ -65,66 +63,12 @@ La animacion ahora puede ejecutarse en cualquiera de los dos modos:
 ./screensaver --sequential
 ```
 
-## Benchmarks
-
-Los benchmarks se ejecutan sin abrir la ventana SDL. Miden solo la logica de
-actualizacion para que el renderizado, el monitor y la sincronizacion vertical
-no alteren la comparacion. El benchmark principal evalua flores, tulipanes,
-nubes y hojas con la misma cantidad de elementos e iteraciones en ambos modos.
-
-| Comando | Proposito | Resultado |
-| --- | --- | --- |
-| `./screensaver --benchmark` | Comparacion base | Tiempo secuencial, tiempo paralelo y aceleracion por algoritmo. |
-| `./screensaver --benchmark --detailed` | Analisis estadistico | Tres repeticiones, CSV y grafica SVG. |
-| `./screensaver --benchmark --scalability` | Escalabilidad | Compara 20 000, 60 000 y 120 000 elementos. |
-| `./screensaver --benchmark --validate` | Correccion | Verifica que ambos modos produzcan el mismo estado. |
-
-### Comparacion base
-
-Ejecuta una medicion de referencia:
+Y un benchmark reproducible en consola para compararlas contra sus versiones
+paralelas usando exactamente la misma logica de actualizacion:
 
 ```bash
 ./screensaver --benchmark
 ```
-
-La salida usa estas metricas:
-
-- `secuencial` y `paralelo`: tiempo total en milisegundos; menor es mejor.
-- `aceleracion: xN`: cuantas veces es mas rapido el modo paralelo. Por ejemplo,
-  `x2.0` significa que tarda aproximadamente la mitad.
-- Una aceleracion menor que `x1.0` significa que el paralelo fue mas lento.
-  Esto es normal con pocos elementos porque crear y coordinar hilos tiene costo.
-
-### Analisis Detallado
-
-Para reducir la variacion de una sola ejecucion:
-
-```bash
-./screensaver --benchmark --detailed
-```
-
-El comando ejecuta tres repeticiones de cada prueba y crea
-`benchmark_results.csv` y `benchmark_chart.svg` en la raiz del proyecto. El
-CSV incluye promedio, minimo, maximo y desviacion estandar; la grafica SVG
-muestra el promedio, aceleracion y porcentaje de mejora. En la grafica, una
-barra secuencial mas grande indica que ese modo tardo mas para la misma carga;
-por tanto, una barra paralela mas corta representa mejor rendimiento. El CSV
-puede abrirse con una hoja de calculo y la grafica SVG se abre directamente en
-un navegador.
-
-### Escalabilidad Y Validacion
-
-```bash
-./screensaver --benchmark --scalability
-./screensaver --benchmark --validate
-```
-
-La prueba de escalabilidad mide como cambia la aceleracion con 20 000, 60 000
-y 120 000 elementos, y genera `benchmark_scalability.csv` y
-`benchmark_scalability.svg`. En esta grafica, una linea mas alta representa
-mayor aceleracion del paralelo. La validacion compara el estado final de
-flores, tulipanes, nubes, hojas y lluvia para confirmar que las rutas
-secuencial y paralela son equivalentes.
 
 Si quieres medir solo un modo:
 
@@ -133,34 +77,20 @@ Si quieres medir solo un modo:
 ./screensaver --benchmark --sequential
 ```
 
-Tambien se puede activar la comparacion base con
-`SCREENSAVER_BENCHMARK=1 ./screensaver`.
-
-Los tiempos dependen del procesador, cantidad de nucleos y carga del equipo.
-Para un informe, conviene ejecutar el analisis detallado sin otros programas
-pesados y reportar los promedios, no una sola ejecucion.
+Tambien se puede activar con `SCREENSAVER_BENCHMARK=1 ./screensaver`. El
+reporte imprime tiempo secuencial, tiempo paralelo y la aceleracion estimada
+para cada algoritmo cuando se usa el modo comparativo.
 
 La configuracion compartida de cada estacion esta en `src/season.cpp`. Los
 elementos nuevos deben consultar `SeasonSystem` y `SeasonProfile` para adaptar
 su cantidad, color o comportamiento sin duplicar la logica de estaciones.
-El ciclo se mantiene siempre en este orden: primavera, verano, otono e
-invierno. Durante primavera las flores y tulipanes crecen gradualmente;
-en otono caen las hojas; en invierno la lluvia es la precipitacion principal,
-y primavera/verano usan mayor intensidad de luz solar. La presencia de aves,
-abejas y mariposas tambien se calcula desde el perfil de cada estacion.
-
-La logica queda separada por responsabilidad: `src/season.cpp` calcula el
-estado estacional, `src/weather.cpp` actualiza las particulas y
-`src/wildlife_update.cpp` actualiza la fauna. Los dos ultimos modulos exponen
-rutas secuenciales y paralelas, seleccionadas con `--sequential` o
-`--parallel`.
 El arbol usa la textura base. Las hojas animadas de primavera y las hojas de
-otono se administran desde `src/leaf.cpp`; su posicion y caida se actualizan
-por bloques independientes.
+otono, que se acumulan en el suelo, se administran desde `src/leaf.cpp`. La posicion y la
+caida de cada hoja se actualizan en paralelo por bloques independientes.
 Los animales animados reutilizables se implementan en `src/flying_animal.cpp`.
-La lluvia usa el sistema de particulas de `src/weather.cpp`, y la grama
-animada se administra desde `src/grass.cpp`. Sus intensidades se definen en
-cada `SeasonProfile`.
+La lluvia y la nieve usan el sistema de particulas de `src/weather.cpp`, y la
+grama animada se administra desde `src/grass.cpp`. Sus intensidades se definen
+en cada `SeasonProfile` y se interpolan durante los cambios de estacion.
 
 Compilación manual equivalente:
 
@@ -361,3 +291,6 @@ Crear un protector de pantalla dinámico, relajante y visualmente atractivo que 
 # Algunas Screenshots
 ![primavera](image.png)
 ![invierno](image-1.png)
+![integracion de graficos nuevos](image-2.png)
+![invierno con algunos cambios](image-3.png)
+

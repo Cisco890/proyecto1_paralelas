@@ -7,9 +7,9 @@
 #include <vector>
 
 struct GrassTextures {
-    std::array<SDL_Texture*, 3> frames;
-    int width;
-    int height;
+    std::array<std::array<SDL_Texture*, 3>, 3> frames{};
+    std::array<int, 3> widths{};
+    std::array<int, 3> heights{};
 };
 
 struct GrassBlade {
@@ -21,7 +21,7 @@ struct GrassBlade {
 bool loadGrassTextures(
     GrassTextures& textures,
     SDL_Renderer* renderer,
-    const std::array<const char*, 3>& paths
+    const std::array<std::array<const char*, 3>, 3>& paths
 );
 void destroyGrassTextures(GrassTextures& textures);
 std::vector<GrassBlade> createGrassField(std::size_t count);
@@ -33,7 +33,8 @@ void renderGrassField(
     int screenHeight,
     int groundY,
     Uint32 currentTicks,
-    float visibleCount
+    float visibleCount,
+    std::size_t seasonIndex = 0
 );
 
 #endif

@@ -23,7 +23,6 @@ struct Leaf {
     bool falling;
     bool autumnLeaf;
     bool settled;
-    bool visible;
     Uint32 animationOffset;
     SDL_Rect dest{};
 };
@@ -38,8 +37,7 @@ void updateLeavesSequential(
     const SDL_Rect& treeDest,
     LeafSeason season,
     float deltaSeconds,
-    Uint32 currentTicks,
-    float autumnProgress = 1.0f
+    Uint32 currentTicks
 );
 
 void updateLeavesParallel(
@@ -48,8 +46,7 @@ void updateLeavesParallel(
     const SDL_Rect& treeDest,
     LeafSeason season,
     float deltaSeconds,
-    Uint32 currentTicks,
-    float autumnProgress = 1.0f
+    Uint32 currentTicks
 );
 
 void renderLeaves(
@@ -59,8 +56,7 @@ void renderLeaves(
     LeafSeason season,
     std::size_t visibleCount,
     Uint32 currentTicks,
-    Uint8 opacity = 255,
-    float autumnExitProgress = 0.0f
+    Uint8 opacity = 255
 );
 
 #endif

@@ -7,7 +7,10 @@
 #include <thread>
 
 namespace {
-void destroySet(std::array<SDL_Texture*, 2>& set) {
+constexpr int cloudRenderScale = 2;
+
+template <std::size_t size>
+void destroySet(std::array<SDL_Texture*, size>& set) {
     for (SDL_Texture*& texture : set) {
         if (texture != nullptr) {
             SDL_DestroyTexture(texture);
@@ -27,30 +30,44 @@ void updateCloudRange(std::vector<Cloud>& clouds,
         if (cloud.x > 1.15f) cloud.x = -0.20f;
         cloud.dest = {static_cast<int>(cloud.x * screenWidth),
                       static_cast<int>(cloud.y * screenHeight),
-                      textures.width * 4, textures.height * 4};
+                      textures.width * cloudRenderScale,
+                      textures.height * cloudRenderScale};
     }
 }
 }
 
 bool loadCloudTextures(
     CloudTextures& textures, SDL_Renderer* renderer,
-    const char* normalFirst, const char* normalSecond,
-    const char* rainFirst, const char* rainSecond
+    const std::array<const char*, 3>& dayPaths,
+    const std::array<const char*, 3>& nightPaths,
+    const std::array<const char*, 3>& rainPaths
 ) {
     textures = {};
-    textures.normal[0] = IMG_LoadTexture(renderer, normalFirst);
-    textures.normal[1] = IMG_LoadTexture(renderer, normalSecond);
-    textures.rain[0] = IMG_LoadTexture(renderer, rainFirst);
-    textures.rain[1] = IMG_LoadTexture(renderer, rainSecond);
-
-    if (!textures.normal[0] || !textures.normal[1] ||
-        !textures.rain[0] || !textures.rain[1]) {
-        std::cerr << "Error cargando las nubes: " << IMG_GetError() << std::endl;
-        destroyCloudTextures(textures);
-        return false;
+    for (std::size_t index = 0; index < 3; ++index) {
+        textures.day[index] = IMG_LoadTexture(renderer, dayPaths[index]);
+        textures.night[index] = IMG_LoadTexture(renderer, nightPaths[index]);
+        textures.rain[index] = IMG_LoadTexture(renderer, rainPaths[index]);
+        if (textures.day[index]) {
+            SDL_SetTextureBlendMode(textures.day[index], SDL_BLENDMODE_BLEND);
+        }
+        if (textures.night[index]) {
+            SDL_SetTextureBlendMode(textures.night[index], SDL_BLENDMODE_BLEND);
+        }
+        if (textures.rain[index]) {
+            SDL_SetTextureBlendMode(textures.rain[index], SDL_BLENDMODE_BLEND);
+        }
     }
 
-    if (SDL_QueryTexture(textures.normal[0], nullptr, nullptr,
+    for (std::size_t index = 0; index < 3; ++index) {
+        if (!textures.day[index] || !textures.night[index] ||
+            !textures.rain[index]) {
+            std::cerr << "Error cargando las nubes: " << IMG_GetError() << std::endl;
+            destroyCloudTextures(textures);
+            return false;
+        }
+    }
+
+    if (SDL_QueryTexture(textures.day[0], nullptr, nullptr,
                          &textures.width, &textures.height) != 0) {
         std::cerr << "Error obteniendo dimensiones de las nubes: "
                   << SDL_GetError() << std::endl;
@@ -61,7 +78,8 @@ bool loadCloudTextures(
 }
 
 void destroyCloudTextures(CloudTextures& textures) {
-    destroySet(textures.normal);
+    destroySet(textures.day);
+    destroySet(textures.night);
     destroySet(textures.rain);
 }
 
@@ -70,9 +88,9 @@ std::vector<Cloud> createCloudField(std::size_t count) {
     clouds.reserve(count);
     for (std::size_t index = 0; index < count; ++index) {
         clouds.push_back({{}, -0.15f + static_cast<float>((index * 31) % 120) / 100.0f,
-                          -0.15f + static_cast<float>((index * 19) % 4) * 0.09f,
+                          -0.03f + static_cast<float>((index * 19) % 4) * 0.08f,
                           0.012f + static_cast<float>(index % 4) * 0.004f,
-                          static_cast<Uint32>(index * 130), index % 2});
+                          static_cast<Uint32>(index * 130), index % 3});
     }
     return clouds;
 }
@@ -110,14 +128,12 @@ void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
 }
 
 void renderCloud(SDL_Renderer* renderer, const CloudTextures& textures,
-                 const Cloud& cloud, bool stormy, Uint8 opacity,
-                 int verticalOffset) {
+                 const Cloud& cloud, bool night, bool stormy, Uint8 opacity) {
     if (opacity == 0) return;
-    const auto& frames = stormy ? textures.rain : textures.normal;
+    const auto& frames = stormy ? textures.rain
+                                : (night ? textures.night : textures.day);
     SDL_Texture* texture = frames[cloud.variant];
-    SDL_Rect destination = cloud.dest;
-    destination.y += verticalOffset;
     SDL_SetTextureAlphaMod(texture, opacity);
-    SDL_RenderCopy(renderer, texture, nullptr, &destination);
+    SDL_RenderCopy(renderer, texture, nullptr, &cloud.dest);
     SDL_SetTextureAlphaMod(texture, 255);
 }

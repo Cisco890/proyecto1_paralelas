@@ -12,12 +12,6 @@ integrantes
 *.so
 *.d
 *.gch
-*.gcda
-*.gcno
-*.gcov
-core
-core.*
-vgcore.*
 
 # Build
 build/
@@ -34,14 +28,9 @@ compile_commands.json
 *.swo
 *~
 .DS_Store
-Thumbs.db
 .clangd/
 
 # Logs / temporales
 *.log
 *.tmp
 *.bak
-benchmark_results.csv
-benchmark_chart.svg
-benchmark_scalability.csv
-benchmark_scalability.svg

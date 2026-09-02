@@ -47,6 +47,6 @@ void updateBird(
     float deltaSeconds
 );
 
-void renderBird(SDL_Renderer* renderer, const Bird& bird, Uint8 opacity = 255);
+void renderBird(SDL_Renderer* renderer, const Bird& bird);
 
 #endif

@@ -38,14 +38,12 @@ void updateCelestialBody(
     int screenWidth,
     int screenHeight,
     int groundY,
-    Uint32 currentTicks,
-    float sizeScale = 1.0f
+    Uint32 currentTicks
 );
 
 void renderCelestialBody(
     SDL_Renderer* renderer,
-    const CelestialBody& body,
-    Uint8 opacity = 255
+    const CelestialBody& body
 );
 
 #endif
