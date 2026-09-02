@@ -885,20 +885,19 @@ int main(int argc, char* argv[]) {
         const float rainIntensity = seasonSystem.current == Season::Winter
             ? 0.0f
             : seasonVisual.rainIntensity;
-        updateWeatherSystem(
-            rain,
-            screenWidth,
-            screenHeight,
-            deltaSeconds,
-            rainIntensity
-        );
-        updateWeatherSystem(
-            snow,
-            screenWidth,
-            screenHeight,
-            deltaSeconds,
-            seasonVisual.snowIntensity
-        );
+        auto updateWeather = [&](WeatherSystem& system, float intensity) {
+            if (executionMode == UpdateExecutionMode::Parallel) {
+                updateWeatherSystemParallel(
+                    system, screenWidth, screenHeight, deltaSeconds, intensity
+                );
+            } else {
+                updateWeatherSystem(
+                    system, screenWidth, screenHeight, deltaSeconds, intensity
+                );
+            }
+        };
+        updateWeather(rain, rainIntensity);
+        updateWeather(snow, seasonVisual.snowIntensity);
         if (executionMode == UpdateExecutionMode::Sequential) {
             updateCloudPositionsSequential(
                 clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
@@ -1296,7 +1295,7 @@ int main(int argc, char* argv[]) {
                       << " | elementos: " << countActiveElements(
                              seasonVisual, seasonSystem.current, isDaytime,
                              std::min(flowers.size(), groundFlowers.size()))
-                      << " | hilos OpenMP: " << availableThreads
+                      << " | hilos OpenMP disponibles: " << availableThreads
                       << std::endl;
             metricsSampleStart = frameEnd;
         }

@@ -50,6 +50,13 @@ void updateWeatherSystem(
     float deltaSeconds,
     float intensity
 );
+void updateWeatherSystemParallel(
+    WeatherSystem& system,
+    int screenWidth,
+    int screenHeight,
+    float deltaSeconds,
+    float intensity
+);
 void renderWeatherSystem(
     SDL_Renderer* renderer,
     const WeatherSystem& system,

@@ -4,6 +4,7 @@
 #include "flower.hpp"
 #include "leaf.hpp"
 #include "tulip.hpp"
+#include "weather.hpp"
 
 #include <SDL2/SDL.h>
 
@@ -149,6 +150,46 @@ BenchmarkSummary benchmarkLeaves() {
 
     return {"Hojas", elementCount, iterations, sequentialMs, parallelMs};
 }
+
+WeatherSystem createBenchmarkWeather(std::size_t elementCount) {
+    WeatherSystem system = {};
+    system.scale = 1;
+    system.spawnY = -0.05f;
+    system.groundY = 0.85f;
+    system.impactAnimation = false;
+    system.accumulate = false;
+    system.particles.reserve(elementCount);
+    for (std::size_t index = 0; index < elementCount; ++index) {
+        system.particles.push_back({
+            static_cast<float>((index * 37) % 1000) / 1000.0f,
+            -0.05f + static_cast<float>((index * 19) % 30) / 1000.0f,
+            180.0f + static_cast<float>((index * 13) % 80),
+            static_cast<float>((index * 7) % 20) - 10.0f,
+            0, 0.0f, false
+        });
+    }
+    return system;
+}
+
+BenchmarkSummary benchmarkWeather() {
+    constexpr std::size_t elementCount = 120000;
+    constexpr std::size_t iterations = 180;
+    WeatherSystem sequential = createBenchmarkWeather(elementCount);
+    WeatherSystem parallel = sequential;
+
+    const double sequentialMs = measureMilliseconds([&]() {
+        for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+            updateWeatherSystem(sequential, 1920, 1080, 0.016f, 1.0f);
+        }
+    });
+    const double parallelMs = measureMilliseconds([&]() {
+        for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+            updateWeatherSystemParallel(parallel, 1920, 1080, 0.016f, 1.0f);
+        }
+    });
+
+    return {"Clima", elementCount, iterations, sequentialMs, parallelMs};
+}
 }
 
 int runPerformanceBenchmark(UpdateExecutionMode mode) {
@@ -156,7 +197,8 @@ int runPerformanceBenchmark(UpdateExecutionMode mode) {
         benchmarkFlowers(),
         benchmarkTulips(),
         benchmarkClouds(),
-        benchmarkLeaves()
+        benchmarkLeaves(),
+        benchmarkWeather()
     };
 
     if (mode == UpdateExecutionMode::Compare) {

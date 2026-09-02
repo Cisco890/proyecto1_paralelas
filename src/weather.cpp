@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
+#include <omp.h>
 
 namespace {
 float pseudoRandom(std::size_t index, unsigned int seed) {
@@ -186,6 +188,78 @@ void updateWeatherSystem(
         } else if (particle.x < -0.02f) {
             particle.x = 1.02f;
         }
+    }
+}
+
+void updateWeatherSystemParallel(
+    WeatherSystem& system,
+    int screenWidth,
+    int screenHeight,
+    float deltaSeconds,
+    float intensity
+) {
+    if (intensity <= 0.0f || screenWidth <= 0 || screenHeight <= 0) {
+        updateWeatherSystem(system, screenWidth, screenHeight,
+                            deltaSeconds, intensity);
+        return;
+    }
+
+    #pragma omp parallel for schedule(static)
+    for (std::ptrdiff_t rawIndex = 0;
+         rawIndex < static_cast<std::ptrdiff_t>(system.particles.size());
+         ++rawIndex) {
+        const std::size_t index = static_cast<std::size_t>(rawIndex);
+        WeatherParticle& particle = system.particles[index];
+        if (system.accumulate) {
+            if (particle.impacted) continue;
+            particle.y += particle.speed * deltaSeconds / screenHeight;
+            particle.x += particle.drift * deltaSeconds / screenWidth;
+            if (particle.y >= system.groundY) {
+                constexpr std::size_t moundCount = 24;
+                const std::size_t mound = std::min(
+                    moundCount - 1,
+                    static_cast<std::size_t>(std::max(0.0f, particle.x) * moundCount)
+                );
+                std::size_t layer = 0;
+                #pragma omp atomic capture
+                layer = system.accumulationHeights[mound]++;
+                particle.x = (static_cast<float>(mound) + 0.20f +
+                              pseudoRandom(index, 73u) * 0.60f) / moundCount;
+                particle.y = system.groundY -
+                    static_cast<float>(std::min<std::size_t>(layer, 12)) * 0.007f;
+                particle.frame = index % system.textures.size();
+                particle.impacted = true;
+            }
+            continue;
+        }
+        if (system.impactAnimation) {
+            if (particle.impacted) {
+                particle.impactElapsed += deltaSeconds;
+                if (particle.impactElapsed < 0.12f) particle.frame = 1;
+                else if (particle.impactElapsed < 0.42f) particle.frame = 2;
+                else {
+                    particle.y = system.spawnY - 0.02f;
+                    particle.frame = 0;
+                    particle.impactElapsed = 0.0f;
+                    particle.impacted = false;
+                }
+                continue;
+            }
+            particle.y += particle.speed * deltaSeconds / screenHeight;
+            particle.x += particle.drift * deltaSeconds / screenWidth;
+            if (particle.y >= system.groundY) {
+                particle.y = system.groundY;
+                particle.frame = 1;
+                particle.impactElapsed = 0.0f;
+                particle.impacted = true;
+            }
+        } else {
+            particle.y += particle.speed * deltaSeconds / screenHeight;
+            particle.x += particle.drift * deltaSeconds / screenWidth;
+            if (particle.y > 1.05f) particle.y = system.spawnY - 0.02f;
+        }
+        if (particle.x > 1.02f) particle.x = -0.02f;
+        else if (particle.x < -0.02f) particle.x = 1.02f;
     }
 }
 

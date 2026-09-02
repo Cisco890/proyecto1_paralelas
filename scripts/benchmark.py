@@ -18,9 +18,9 @@ from collections import defaultdict
 from pathlib import Path
 
 
-ALGORITHMS = ("Flores", "Tulipanes", "Nubes", "Hojas")
+ALGORITHMS = ("Flores", "Tulipanes", "Nubes", "Hojas", "Clima")
 LINE_RE = re.compile(
-    r"^(Flores|Tulipanes|Nubes|Hojas)\s+\|\s+elementos:\s+(\d+)\s+\|\s+"
+    r"^(Flores|Tulipanes|Nubes|Hojas|Clima)\s+\|\s+elementos:\s+(\d+)\s+\|\s+"
     r"iteraciones:\s+(\d+)\s+\|\s+modo:\s+(secuencial|paralelo|sequential|parallel)\s+\|\s+"
     r"tiempo:\s+([0-9]+(?:\.[0-9]+)?)\s+ms\s*$"
 )
