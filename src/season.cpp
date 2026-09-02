@@ -27,7 +27,9 @@ SDL_Color mixColor(SDL_Color from, SDL_Color to, float progress) {
 SeasonSystem createSeasonSystem(Uint32 currentTicks) {
     // Cada estacion dura 30 segundos. Se puede cambiar desde un archivo de
     // configuracion en el futuro sin afectar a los elementos del escenario.
-    return {Season::Spring, currentTicks, 30000, 8000};
+    // Las estaciones duran 45 segundos y la transicion ocupa los ultimos
+    // 12 segundos para que los cambios visuales sean mas lentos.
+    return {Season::Spring, currentTicks, 45000, 12000};
 }
 
 void updateSeason(SeasonSystem& system, Uint32 currentTicks) {

@@ -11,6 +11,8 @@ struct WeatherParticle {
     float speed;
     float drift;
     std::size_t frame;
+    float impactElapsed;
+    bool impacted;
 };
 
 struct WeatherSystem {
@@ -20,6 +22,10 @@ struct WeatherSystem {
     int textureHeight;
     int scale;
     float spawnY;
+    float groundY;
+    bool impactAnimation;
+    bool accumulate;
+    std::vector<std::size_t> accumulationHeights;
 };
 
 bool loadWeatherSystem(
@@ -32,6 +38,10 @@ bool loadWeatherSystem(
     float speedVariation
 );
 void setWeatherSpawnHeight(WeatherSystem& system, float normalizedY);
+void setWeatherImpactAnimation(WeatherSystem& system, bool enabled,
+                               float groundNormalized = 0.85f);
+void setWeatherAccumulation(WeatherSystem& system, bool enabled,
+                            float groundNormalized = 0.85f);
 void destroyWeatherSystem(WeatherSystem& system);
 void updateWeatherSystem(
     WeatherSystem& system,

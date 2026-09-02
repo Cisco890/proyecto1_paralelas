@@ -58,8 +58,12 @@ void updateFlyingAnimal(
     Uint32 currentTicks
 ) {
     animal.x += animal.velocityX * deltaSeconds;
-    if (animal.x > static_cast<float>(screenWidth + animal.width)) {
+    if (animal.velocityX >= 0.0f &&
+        animal.x > static_cast<float>(screenWidth + animal.width)) {
         animal.x = static_cast<float>(-animal.width * 3);
+    } else if (animal.velocityX < 0.0f &&
+               animal.x < static_cast<float>(-animal.width * 3)) {
+        animal.x = static_cast<float>(screenWidth + animal.width);
     }
 
     const float time = static_cast<float>(currentTicks) / 1000.0f;
