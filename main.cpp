@@ -330,9 +330,19 @@ int main(int argc, char* argv[]) {
         CelestialBodyType::Sun,
         {255, 221, 64, 255}
     );
+    loadCelestialBodyTexture(
+        sun,
+        renderer,
+        "assets/Celestial body/Sun_frame_0.png"
+    );
     CelestialBody moon = createCelestialBody(
         CelestialBodyType::Moon,
         {245, 245, 235, 255}
+    );
+    loadCelestialBodyTexture(
+        moon,
+        renderer,
+        "assets/Celestial body/Moon_frame_0.png"
     );
     StarTextures starTextures = {};
 
