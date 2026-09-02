@@ -1165,9 +1165,13 @@ int main(int argc, char* argv[]) {
                 static_cast<float>(flowerCount) / requestedTotalFlowerCount
             )
             : 0.0f;
-        const float visibleFlowerCount = std::min(
+        const std::size_t flowerCapacity = std::min(
+            flowers.size(), groundFlowers.size()
+        );
+        const float visibleFlowerCount = std::clamp(
             seasonVisual.flowerCount * flowerBudgetScale,
-            static_cast<float>(flowers.size())
+            0.0f,
+            static_cast<float>(flowerCapacity)
         );
         const float visibleTulipCount = std::min(
             requestedTulipCount * flowerBudgetScale,
@@ -1175,11 +1179,19 @@ int main(int argc, char* argv[]) {
         );
         // La flag representa el total combinado y se distribuye entre las
         // flores rosas animadas y las flores de suelo.
-        const float pinkFlowerCount = std::ceil(visibleFlowerCount * 0.5f);
-        const float groundFlowerCount = visibleFlowerCount - pinkFlowerCount;
+        const float pinkFlowerCount = std::min(
+            visibleFlowerCount,
+            std::ceil(visibleFlowerCount * 0.5f)
+        );
+        const float groundFlowerCount = std::max(
+            0.0f, visibleFlowerCount - pinkFlowerCount
+        );
 
         const auto renderPinkFlowers = [&](float count) {
-            const std::size_t complete = static_cast<std::size_t>(std::floor(count));
+            const std::size_t complete = std::min(
+                static_cast<std::size_t>(std::floor(std::max(0.0f, count))),
+                flowers.size()
+            );
             for (std::size_t index = 0; index < complete; ++index) {
                 renderFlower(renderer, flowerTextures, flowers[index], currentTicks);
             }
@@ -1190,7 +1202,10 @@ int main(int argc, char* argv[]) {
             }
         };
         const auto renderGroundFlowers = [&](float count) {
-            const std::size_t complete = static_cast<std::size_t>(std::floor(count));
+            const std::size_t complete = std::min(
+                static_cast<std::size_t>(std::floor(std::max(0.0f, count))),
+                groundFlowers.size()
+            );
             for (std::size_t index = 0; index < complete; ++index) {
                 renderGroundFlower(renderer, flowerTextures, groundFlowers[index],
                                    index % 2);
