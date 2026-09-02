@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -156,9 +157,12 @@ struct SeasonMetric {
 };
 
 std::size_t countActiveElements(const SeasonVisualState& state,
-                                Season season, bool daytime) {
+                                Season season, bool daytime,
+                                std::size_t flowerLimit) {
     std::size_t elements = static_cast<std::size_t>(
-        std::ceil(state.flowerCount) + std::ceil(state.grassCount)
+        std::ceil(std::min(
+            state.flowerCount, static_cast<float>(flowerLimit)
+        )) + std::ceil(state.grassCount)
     );
     elements += static_cast<std::size_t>(std::ceil(state.rainIntensity * 220.0f));
     elements += static_cast<std::size_t>(std::ceil(state.snowIntensity * 150.0f));
@@ -177,6 +181,9 @@ int main(int argc, char* argv[]) {
     bool runBenchmark = std::getenv("SCREENSAVER_BENCHMARK") != nullptr;
     UpdateExecutionMode executionMode = UpdateExecutionMode::Parallel;
     UpdateExecutionMode benchmarkMode = UpdateExecutionMode::Compare;
+    constexpr std::size_t defaultFlowerCount = 36;
+    constexpr std::size_t maximumFlowerCount = 100000;
+    std::size_t flowerCount = defaultFlowerCount;
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
         if (argument == "--benchmark") {
@@ -187,6 +194,26 @@ int main(int argc, char* argv[]) {
         } else if (argument == "--parallel") {
             executionMode = UpdateExecutionMode::Parallel;
             benchmarkMode = UpdateExecutionMode::Parallel;
+        } else if (argument == "--flowers") {
+            if (index + 1 >= argc) {
+                std::cerr << "Error: --flowers requiere una cantidad entera.\n";
+                return 2;
+            }
+
+            const std::string value = argv[++index];
+            try {
+                std::size_t consumed = 0;
+                const unsigned long long parsed = std::stoull(value, &consumed);
+                if (consumed != value.size() ||
+                    parsed > maximumFlowerCount) {
+                    throw std::out_of_range("cantidad fuera de rango");
+                }
+                flowerCount = static_cast<std::size_t>(parsed);
+            } catch (const std::exception&) {
+                std::cerr << "Error: --flowers debe estar entre 0 y "
+                          << maximumFlowerCount << ".\n";
+                return 2;
+            }
         }
     }
 
@@ -740,8 +767,8 @@ int main(int argc, char* argv[]) {
     auto metricsSampleStart = std::chrono::steady_clock::now();
     auto frameStart = metricsSampleStart;
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
-    std::vector<Flower> flowers = createFlowerField(36);
-    std::vector<Flower> groundFlowers = createFlowerField(36);
+    std::vector<Flower> flowers = createFlowerField(flowerCount);
+    std::vector<Flower> groundFlowers = createFlowerField(flowerCount);
     std::vector<Tulip> tulips = createTulipField(20);
     // Mantiene la cantidad y distribucion de nubes de la rama main.
     std::vector<Cloud> clouds = createCloudField(14);
@@ -1109,33 +1136,77 @@ int main(int argc, char* argv[]) {
         }
 
         // Todas las flores se dibujan despues del arbol para quedar en primer plano.
-        const std::size_t completeFlowers = static_cast<std::size_t>(
-            std::floor(seasonVisual.flowerCount)
-        );
-        for (std::size_t index = 0; index < completeFlowers; ++index) {
-            renderFlower(renderer, flowerTextures, flowers[index], currentTicks);
-            renderGroundFlower(
-                renderer, flowerTextures, groundFlowers[index], index % 2
-            );
-        }
-
-        const float partialFlower = seasonVisual.flowerCount - completeFlowers;
-        if (partialFlower > 0.0f && completeFlowers < flowers.size()) {
-            const Uint8 opacity = static_cast<Uint8>(partialFlower * 255.0f);
-            renderFlower(renderer, flowerTextures, flowers[completeFlowers],
-                         currentTicks, opacity);
-            renderGroundFlower(renderer, flowerTextures,
-                               groundFlowers[completeFlowers], completeFlowers % 2,
-                               opacity);
-        }
-
+        // La transición de estación puede conservar temporalmente el conteo
+        // visual anterior. Se limita al tamaño real de ambos vectores para
+        // evitar acceder a flowers[index] fuera de rango cuando se usa
+        // --flowers con una cantidad menor al valor predeterminado.
         const bool springIsCurrent = seasonSystem.current == Season::Spring;
         const bool springIsNext = getNextSeason(seasonSystem.current) == Season::Spring;
         float tulipPresence = springIsCurrent ? 1.0f : 0.0f;
         if (springIsNext) tulipPresence = seasonVisual.transitionProgress;
-        for (const Tulip& tulip : tulips) {
-            renderTulip(renderer, tulipTextures, tulip, currentTicks,
-                        static_cast<Uint8>(tulipPresence * 255.0f));
+
+        // `--flowers N` es un presupuesto global. Se reparte según la
+        // cantidad solicitada por la estación para que los tulipanes no se
+        // sumen aparte al total de flores.
+        const float requestedTulipCount =
+            tulipPresence * static_cast<float>(tulips.size());
+        const float requestedTotalFlowerCount =
+            seasonVisual.flowerCount + requestedTulipCount;
+        const float flowerBudgetScale = requestedTotalFlowerCount > 0.0f
+            ? std::min(
+                1.0f,
+                static_cast<float>(flowerCount) / requestedTotalFlowerCount
+            )
+            : 0.0f;
+        const float visibleFlowerCount = std::min(
+            seasonVisual.flowerCount * flowerBudgetScale,
+            static_cast<float>(flowers.size())
+        );
+        const float visibleTulipCount = std::min(
+            requestedTulipCount * flowerBudgetScale,
+            static_cast<float>(tulips.size())
+        );
+        // La flag representa el total combinado y se distribuye entre las
+        // flores rosas animadas y las flores de suelo.
+        const float pinkFlowerCount = std::ceil(visibleFlowerCount * 0.5f);
+        const float groundFlowerCount = visibleFlowerCount - pinkFlowerCount;
+
+        const auto renderPinkFlowers = [&](float count) {
+            const std::size_t complete = static_cast<std::size_t>(std::floor(count));
+            for (std::size_t index = 0; index < complete; ++index) {
+                renderFlower(renderer, flowerTextures, flowers[index], currentTicks);
+            }
+            const float partial = count - complete;
+            if (partial > 0.0f && complete < flowers.size()) {
+                renderFlower(renderer, flowerTextures, flowers[complete],
+                             currentTicks, static_cast<Uint8>(partial * 255.0f));
+            }
+        };
+        const auto renderGroundFlowers = [&](float count) {
+            const std::size_t complete = static_cast<std::size_t>(std::floor(count));
+            for (std::size_t index = 0; index < complete; ++index) {
+                renderGroundFlower(renderer, flowerTextures, groundFlowers[index],
+                                   index % 2);
+            }
+            const float partial = count - complete;
+            if (partial > 0.0f && complete < groundFlowers.size()) {
+                renderGroundFlower(renderer, flowerTextures, groundFlowers[complete],
+                                   complete % 2, static_cast<Uint8>(partial * 255.0f));
+            }
+        };
+        renderPinkFlowers(pinkFlowerCount);
+        renderGroundFlowers(groundFlowerCount);
+
+        const std::size_t completeTulips = static_cast<std::size_t>(
+            std::floor(visibleTulipCount)
+        );
+        for (std::size_t index = 0; index < completeTulips; ++index) {
+            renderTulip(renderer, tulipTextures, tulips[index], currentTicks, 255);
+        }
+        const float partialTulip = visibleTulipCount - completeTulips;
+        if (partialTulip > 0.0f && completeTulips < tulips.size()) {
+            renderTulip(renderer, tulipTextures, tulips[completeTulips],
+                        currentTicks, static_cast<Uint8>(partialTulip * 255.0f));
         }
 
         if (seasonSystem.current != Season::Winter) {
@@ -1215,7 +1286,8 @@ int main(int argc, char* argv[]) {
                       << averageFps
                       << " | cuadro: " << averageMilliseconds << " ms"
                       << " | elementos: " << countActiveElements(
-                             seasonVisual, seasonSystem.current, isDaytime)
+                             seasonVisual, seasonSystem.current, isDaytime,
+                             std::min(flowers.size(), groundFlowers.size()))
                       << " | hilos CPU: " << availableThreads
                       << " | hilos hojas: 8"
                       << std::endl;
