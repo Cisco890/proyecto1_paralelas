@@ -37,11 +37,22 @@ float getDaylightFactor(Uint32 ticks) {
 
 int main(int argc, char* argv[]) {
     bool runBenchmark = std::getenv("SCREENSAVER_BENCHMARK") != nullptr;
+    bool detailedBenchmark = false;
+    bool scalabilityBenchmark = false;
+    bool consistencyValidation = false;
     UpdateExecutionMode executionMode = UpdateExecutionMode::Parallel;
     UpdateExecutionMode benchmarkMode = UpdateExecutionMode::Compare;
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
         if (argument == "--benchmark") {
+            runBenchmark = true;
+        } else if (argument == "--detailed") {
+            detailedBenchmark = true;
+        } else if (argument == "--scalability") {
+            scalabilityBenchmark = true;
+            runBenchmark = true;
+        } else if (argument == "--validate") {
+            consistencyValidation = true;
             runBenchmark = true;
         } else if (argument == "--sequential") {
             executionMode = UpdateExecutionMode::Sequential;
@@ -53,7 +64,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (runBenchmark) {
-        return runPerformanceBenchmark(benchmarkMode);
+        if (scalabilityBenchmark) return runScalabilityBenchmark();
+        if (consistencyValidation) return runConsistencyValidation();
+        return runPerformanceBenchmark(benchmarkMode, detailedBenchmark);
     }
 
     // Configuracion para Pixel Art

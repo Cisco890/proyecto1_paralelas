@@ -17,6 +17,8 @@ struct BenchmarkSummary {
     double parallelMilliseconds;
 };
 
-int runPerformanceBenchmark(UpdateExecutionMode mode);
+int runPerformanceBenchmark(UpdateExecutionMode mode, bool detailed = false);
+int runScalabilityBenchmark();
+int runConsistencyValidation();
 
 #endif
