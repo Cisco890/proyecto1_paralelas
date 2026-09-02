@@ -34,9 +34,26 @@ bool loadFlowerTextures(
     textures = {};
     textures.frames[0] = IMG_LoadTexture(renderer, firstFramePath);
     textures.frames[1] = IMG_LoadTexture(renderer, secondFramePath);
+    textures.groundFrames[0] = IMG_LoadTexture(
+        renderer, "assets/flowers/pink_ground_flower.png"
+    );
+    textures.groundFrames[1] = IMG_LoadTexture(
+        renderer, "assets/flowers/light_pink_ground_flower.png"
+    );
 
-    if (textures.frames[0] == nullptr || textures.frames[1] == nullptr) {
+    if (textures.frames[0] == nullptr || textures.frames[1] == nullptr ||
+        textures.groundFrames[0] == nullptr || textures.groundFrames[1] == nullptr) {
         std::cerr << "Error cargando las flores: " << IMG_GetError() << std::endl;
+        destroyFlowerTextures(textures);
+        return false;
+    }
+
+    if (SDL_QueryTexture(
+            textures.groundFrames[0], nullptr, nullptr,
+            &textures.groundWidth, &textures.groundHeight
+        ) != 0) {
+        std::cerr << "Error obteniendo dimensiones de la flor de suelo: "
+                  << SDL_GetError() << std::endl;
         destroyFlowerTextures(textures);
         return false;
     }
@@ -56,6 +73,12 @@ bool loadFlowerTextures(
 
 void destroyFlowerTextures(FlowerTextures& textures) {
     for (SDL_Texture*& frame : textures.frames) {
+        if (frame != nullptr) {
+            SDL_DestroyTexture(frame);
+            frame = nullptr;
+        }
+    }
+    for (SDL_Texture*& frame : textures.groundFrames) {
         if (frame != nullptr) {
             SDL_DestroyTexture(frame);
             frame = nullptr;
@@ -158,5 +181,28 @@ void renderFlower(
     SDL_Texture* texture = textures.frames[frame];
     SDL_SetTextureAlphaMod(texture, opacity);
     SDL_RenderCopy(renderer, texture, nullptr, &flower.dest);
+    SDL_SetTextureAlphaMod(texture, 255);
+}
+
+void renderGroundFlower(
+    SDL_Renderer* renderer,
+    const FlowerTextures& textures,
+    const Flower& flower,
+    std::size_t variant,
+    Uint8 opacity
+) {
+    if (textures.groundFrames.empty()) return;
+    variant %= textures.groundFrames.size();
+    SDL_Texture* texture = textures.groundFrames[variant];
+    const int width = textures.groundWidth * 3;
+    const int height = textures.groundHeight * 3;
+    SDL_Rect destination = {
+        flower.dest.x + (flower.dest.w - width) / 2,
+        flower.dest.y + flower.dest.h - height,
+        width,
+        height
+    };
+    SDL_SetTextureAlphaMod(texture, opacity);
+    SDL_RenderCopy(renderer, texture, nullptr, &destination);
     SDL_SetTextureAlphaMod(texture, 255);
 }

@@ -6,8 +6,8 @@ namespace {
 constexpr std::array<SeasonProfile, 4> profiles = {{
     {"Primavera", {135, 206, 235, 255}, {76, 140, 74, 255}, 36, 1.0f, 1.0f, 72, 0.65f, 0.0f},
     {"Verano",    {80, 180, 235, 255},  {64, 132, 62, 255},  6, 0.8f, 0.7f, 58, 0.0f, 0.0f},
-    {"Otono",     {190, 145, 92, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.2f, 20, 0.0f, 0.0f},
-    {"Invierno",  {180, 205, 220, 255}, {220, 230, 235, 255}, 0, 0.0f, 0.0f,  0, 0.05f, 1.0f}
+    {"Otono",     {135, 206, 235, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.2f, 20, 0.0f, 0.0f},
+    {"Invierno",  {180, 205, 220, 255}, {180, 205, 245, 255}, 0, 0.0f, 0.0f,  0, 0.0f, 1.0f}
 }};
 
 Uint8 mixChannel(Uint8 from, Uint8 to, float progress) {
@@ -29,7 +29,7 @@ SeasonSystem createSeasonSystem(Uint32 currentTicks) {
     // configuracion en el futuro sin afectar a los elementos del escenario.
     // Las estaciones duran 45 segundos y la transicion ocupa los ultimos
     // 12 segundos para que los cambios visuales sean mas lentos.
-    return {Season::Spring, currentTicks, 45000, 12000};
+    return {Season::Spring, currentTicks, 30000, 6000};
 }
 
 void updateSeason(SeasonSystem& system, Uint32 currentTicks) {

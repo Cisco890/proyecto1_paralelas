@@ -11,12 +11,17 @@ struct Cat {
     int width = 0;
     int height = 0;
     float horizontalPosition = 0.72f;
+    float horizontalSpeed = 0.07f;
+    int direction = 1;
+    float visibilityTimer = 0.0f;
+    bool visible = true;
     SDL_Rect dest{};
 };
 
 bool loadCat(Cat& cat, SDL_Renderer* renderer);
 void destroyCat(Cat& cat);
-void updateCat(Cat& cat, int screenWidth, int groundY);
+void updateCat(Cat& cat, int screenWidth, int groundY, float deltaSeconds,
+               bool walking);
 void renderCat(SDL_Renderer* renderer, const Cat& cat, Uint32 currentTicks,
                bool sleeping, Uint8 opacity = 255);
 

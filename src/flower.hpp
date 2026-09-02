@@ -8,8 +8,11 @@
 
 struct FlowerTextures {
     std::array<SDL_Texture*, 2> frames;
+    std::array<SDL_Texture*, 2> groundFrames;
     int width;
     int height;
+    int groundWidth;
+    int groundHeight;
 };
 
 struct Flower {
@@ -59,6 +62,14 @@ void renderFlower(
     const FlowerTextures& textures,
     const Flower& flower,
     Uint32 currentTicks,
+    Uint8 opacity = 255
+);
+
+void renderGroundFlower(
+    SDL_Renderer* renderer,
+    const FlowerTextures& textures,
+    const Flower& flower,
+    std::size_t variant,
     Uint8 opacity = 255
 );
 

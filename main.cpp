@@ -111,6 +111,45 @@ void renderFpsOverlay(SDL_Renderer* renderer, int screenWidth, int fps) {
     }
 }
 
+void renderGroundTexture(SDL_Renderer* renderer, const SDL_Rect& ground,
+                         SDL_Color baseColor, Uint32 currentTicks) {
+    if (ground.w <= 0 || ground.h <= 0) return;
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    for (int y = ground.y; y < ground.y + ground.h; y += 12) {
+        for (int x = 0; x < ground.w; x += 16) {
+            const unsigned int seed = static_cast<unsigned int>(
+                x * 17 + y * 31 + currentTicks / 900
+            );
+            const Uint8 variation = static_cast<Uint8>(seed % 18);
+            const bool lighter = ((seed / 19) % 2) == 0;
+            const SDL_Color textureColor = lighter
+                ? SDL_Color{
+                    static_cast<Uint8>(std::min(255, baseColor.r + variation)),
+                    static_cast<Uint8>(std::min(255, baseColor.g + variation)),
+                    static_cast<Uint8>(std::min(255, baseColor.b + variation)),
+                    110
+                }
+                : SDL_Color{
+                    static_cast<Uint8>(baseColor.r * 0.70f),
+                    static_cast<Uint8>(baseColor.g * 0.70f),
+                    static_cast<Uint8>(baseColor.b * 0.70f),
+                    120
+                };
+            SDL_SetRenderDrawColor(renderer, textureColor.r, textureColor.g,
+                                   textureColor.b, textureColor.a);
+            SDL_Rect patch = {
+                x + static_cast<int>(seed % 7),
+                y + static_cast<int>((seed / 7) % 6),
+                2 + static_cast<int>(seed % 5),
+                2 + static_cast<int>((seed / 5) % 3)
+            };
+            SDL_RenderFillRect(renderer, &patch);
+        }
+    }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+}
+
 struct SeasonMetric {
     std::size_t frames = 0;
     double totalMilliseconds = 0.0;
@@ -243,7 +282,22 @@ int main(int argc, char* argv[]) {
     // Elementos a renderizar (memoria)
     // --------------------------------------
     Tree tree;
+    Tree springTree;
+    Tree summerTree;
+    Tree autumnTree;
+    Tree winterTree;
     Cat cat;
+    SDL_Texture* airplaneTexture = IMG_LoadTexture(
+        renderer, "assets/sky/airplane.png"
+    );
+    int airplaneWidth = 0;
+    int airplaneHeight = 0;
+    if (airplaneTexture != nullptr && SDL_QueryTexture(
+            airplaneTexture, nullptr, nullptr, &airplaneWidth, &airplaneHeight
+        ) != 0) {
+        SDL_DestroyTexture(airplaneTexture);
+        airplaneTexture = nullptr;
+    }
     LeafTextures leafTextures;
     CelestialBody sun = createCelestialBody(
         CelestialBodyType::Sun,
@@ -498,7 +552,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     // La lluvia comienza debajo de la base visible de las nubes.
-    setWeatherSpawnHeight(rain, 0.20f);
+    // Las gotas empiezan debajo del borde inferior de las nubes.
+    setWeatherSpawnHeight(rain, 0.34f);
     setWeatherImpactAnimation(rain, true, 0.85f);
 
     WeatherSystem snow;
@@ -535,10 +590,21 @@ int main(int argc, char* argv[]) {
     CloudTextures cloudTextures;
     if (!loadCloudTextures(
             cloudTextures, renderer,
-            "assets/clouds/normal_cloud_1.png",
-            "assets/clouds/normal_cloud_2.png",
-            "assets/clouds/rain_cloud_1.png",
-            "assets/clouds/rain_cloud_2.png"
+            {{
+                "assets/clouds/day_cloud_1.png",
+                "assets/clouds/day_cloud_2.png",
+                "assets/clouds/day_cloud_3.png"
+            }},
+            {{
+                "assets/clouds/night_cloud_1.png",
+                "assets/clouds/night_cloud_2.png",
+                "assets/clouds/night_cloud_3.png"
+            }},
+            {{
+                "assets/clouds/rain_cloud_1.png",
+                "assets/clouds/rain_cloud_2.png",
+                "assets/clouds/rain_cloud_3.png"
+            }}
         )) {
         destroyWeatherSystem(snow);
         destroyWeatherSystem(rain);
@@ -591,6 +657,53 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if (!loadTree(springTree, renderer, "assets/tree/spring_tree.png")) {
+        destroyTree(tree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
+    if (!loadTree(summerTree, renderer, "assets/tree/summer_tree.png") ||
+        !loadTree(autumnTree, renderer, "assets/tree/autum_tree.png") ||
+        !loadTree(winterTree, renderer, "assets/tree/winter_tree.png")) {
+        destroyTree(tree);
+        destroyTree(springTree);
+        destroyTree(summerTree);
+        destroyTree(autumnTree);
+        destroyTree(winterTree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
+    if (!loadTreeNight(springTree, renderer, "assets/tree/spring_tree_night.png") ||
+        !loadTreeNight(summerTree, renderer, "assets/tree/summer_tree_night.png") ||
+        !loadTreeNight(autumnTree, renderer, "assets/tree/autum_tree_night.png") ||
+        !loadTreeNight(winterTree, renderer, "assets/tree/winter_tree_night.png")) {
+        destroyTree(tree);
+        destroyTree(springTree);
+        destroyTree(summerTree);
+        destroyTree(autumnTree);
+        destroyTree(winterTree);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
+    // Cada asset tiene un margen transparente distinto debajo de las raices.
+    // El desplazamiento hace coincidir el ultimo pixel visible con el suelo.
+    springTree.groundOffset = 40;
+    summerTree.groundOffset = 45;
+    autumnTree.groundOffset = 36;
+    winterTree.groundOffset = 47;
+
     if (!loadCat(cat, renderer)) {
         destroyLeafTextures(leafTextures);
         destroyTulipTextures(tulipTextures);
@@ -604,6 +717,10 @@ int main(int argc, char* argv[]) {
         for (Bird& currentBird : birds) destroyBird(currentBird);
         destroyStarTextures(starTextures);
         destroyTree(tree);
+        destroyTree(springTree);
+        destroyTree(summerTree);
+        destroyTree(autumnTree);
+        destroyTree(winterTree);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         IMG_Quit();
@@ -624,12 +741,15 @@ int main(int argc, char* argv[]) {
     auto frameStart = metricsSampleStart;
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
     std::vector<Flower> flowers = createFlowerField(36);
+    std::vector<Flower> groundFlowers = createFlowerField(36);
     std::vector<Tulip> tulips = createTulipField(20);
-    std::vector<Cloud> clouds = createCloudField(4);
+    // Mantiene la cantidad y distribucion de nubes de la rama main.
+    std::vector<Cloud> clouds = createCloudField(14);
     std::vector<GrassBlade> grass = createGrassField(72);
     std::vector<Leaf> leaves = createLeafField(72);
     constexpr std::size_t maximumStarCount = 90;
     std::vector<Star> stars = createStarField(maximumStarCount);
+    float airplaneX = -0.12f;
     int previousFlowerScreenWidth = -1;
     int previousFlowerScreenHeight = -1;
     int previousFlowerGroundY = -1;
@@ -727,12 +847,15 @@ int main(int argc, char* argv[]) {
                 butterfly, screenWidth, groundY, deltaSeconds, currentTicks
             );
         }
+        const float rainIntensity = seasonSystem.current == Season::Winter
+            ? 0.0f
+            : seasonVisual.rainIntensity;
         updateWeatherSystem(
             rain,
             screenWidth,
             screenHeight,
             deltaSeconds,
-            seasonVisual.rainIntensity
+            rainIntensity
         );
         updateWeatherSystem(
             snow,
@@ -751,8 +874,20 @@ int main(int argc, char* argv[]) {
             );
         }
 
-        updateTreePosition(tree, screenWidth, groundY);
-        updateCat(cat, screenWidth, groundY);
+        auto treeForSeason = [&](Season season) -> Tree& {
+            switch (season) {
+                case Season::Spring: return springTree;
+                case Season::Summer: return summerTree;
+                case Season::Autumn: return autumnTree;
+                case Season::Winter: return winterTree;
+            }
+            return springTree;
+        };
+        Tree& activeTree = treeForSeason(seasonSystem.current);
+        Tree& nextTree = treeForSeason(getNextSeason(seasonSystem.current));
+        updateTreePosition(activeTree, screenWidth, groundY);
+        updateTreePosition(nextTree, screenWidth, groundY);
+        updateCat(cat, screenWidth, groundY, deltaSeconds, isDaytime);
 
         LeafSeason leafSeason = LeafSeason::Spring;
         if (seasonSystem.current == Season::Autumn) {
@@ -762,11 +897,11 @@ int main(int argc, char* argv[]) {
         // independiente y la fase de animacion no toca SDL.
         if (executionMode == UpdateExecutionMode::Sequential) {
             updateLeavesSequential(
-                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
+                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds, currentTicks
             );
         } else {
             updateLeavesParallel(
-                leaves, leafTextures, tree.dest, leafSeason, deltaSeconds, currentTicks
+                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds, currentTicks
             );
         }
 
@@ -780,9 +915,15 @@ int main(int argc, char* argv[]) {
                 updateFlowerPositionsSequential(
                     flowers, flowerTextures, screenWidth, screenHeight, groundY
                 );
+                updateFlowerPositionsSequential(
+                    groundFlowers, flowerTextures, screenWidth, screenHeight, groundY
+                );
             } else {
                 updateFlowerPositionsParallel(
                     flowers, flowerTextures, screenWidth, screenHeight, groundY
+                );
+                updateFlowerPositionsParallel(
+                    groundFlowers, flowerTextures, screenWidth, screenHeight, groundY
                 );
             }
 
@@ -880,7 +1021,9 @@ int main(int argc, char* argv[]) {
         };
 
         SDL_Color groundColor = seasonVisual.groundColor;
-        const float groundShadow = 0.78f + daytimePresence * 0.22f;
+        // El suelo sigue el ciclo de luz: brillante durante el dia y mas
+        // oscuro gradualmente conforme llega la noche.
+        const float groundShadow = 0.60f + daylight * 0.40f;
         groundColor.r = static_cast<Uint8>(groundColor.r * groundShadow);
         groundColor.g = static_cast<Uint8>(groundColor.g * groundShadow);
         groundColor.b = static_cast<Uint8>(groundColor.b * groundShadow);
@@ -893,10 +1036,11 @@ int main(int argc, char* argv[]) {
             groundColor.a
         );
         SDL_RenderFillRect(renderer, &ground);
+        renderGroundTexture(renderer, ground, groundColor, currentTicks);
 
         // La lluvia queda detras del pasto y las flores, pero encima del
         // suelo para que el impacto de la gota siga siendo visible.
-        renderWeatherSystem(renderer, rain, seasonVisual.rainIntensity);
+        renderWeatherSystem(renderer, rain, rainIntensity);
         renderWeatherSystem(renderer, snow, seasonVisual.snowIntensity);
 
         std::size_t grassSeason = 0;
@@ -914,22 +1058,75 @@ int main(int argc, char* argv[]) {
             grassSeason
         );
 
+        // Las nubes forman parte del fondo; el arbol se dibuja encima.
+        if (airplaneTexture != nullptr && airplaneWidth > 0 && isDaytime) {
+            constexpr float airplaneSpeed = 0.10f;
+            constexpr int airplaneScale = 3;
+            airplaneX += airplaneSpeed * deltaSeconds;
+            if (airplaneX > 1.12f) airplaneX = -0.12f;
+            SDL_Rect airplaneDestination = {
+                static_cast<int>(airplaneX * screenWidth),
+                static_cast<int>(screenHeight * 0.16f),
+                airplaneWidth * airplaneScale,
+                airplaneHeight * airplaneScale
+            };
+            SDL_RenderCopy(renderer, airplaneTexture, nullptr, &airplaneDestination);
+        }
+
+        // Las nubes se dibujan despues del avion para que este pase detras.
+        // Se mezclan dia/noche y normales/de lluvia para evitar cortes.
+        const float rainBlend = std::clamp(rainIntensity, 0.0f, 1.0f);
+        const Uint8 dayCloudOpacity = static_cast<Uint8>(
+            (1.0f - rainBlend) * daytimePresence * 255.0f
+        );
+        const Uint8 nightCloudOpacity = static_cast<Uint8>(
+            (1.0f - rainBlend) * (1.0f - daytimePresence) * 255.0f
+        );
+        const Uint8 rainCloudOpacity = static_cast<Uint8>(rainBlend * 255.0f);
+        for (const Cloud& cloud : clouds) {
+            renderCloud(renderer, cloudTextures, cloud, false, false,
+                        dayCloudOpacity);
+            renderCloud(renderer, cloudTextures, cloud, true, false,
+                        nightCloudOpacity);
+            renderCloud(renderer, cloudTextures, cloud, false, true,
+                        rainCloudOpacity);
+        }
+
+        const float seasonProgress = seasonVisual.transitionProgress;
+        const Uint8 currentTreeOpacity = static_cast<Uint8>(
+            (1.0f - seasonProgress) * 255.0f
+        );
+        const Uint8 nextTreeOpacity = static_cast<Uint8>(seasonProgress * 255.0f);
+        const auto renderTreeLighting = [&](const Tree& tree, Uint8 opacity) {
+            renderTree(renderer, tree, false,
+                       static_cast<Uint8>(opacity * daytimePresence));
+            renderTree(renderer, tree, true,
+                       static_cast<Uint8>(opacity * (1.0f - daytimePresence)));
+        };
+        renderTreeLighting(activeTree, currentTreeOpacity);
+        if (nextTreeOpacity > 0) {
+            renderTreeLighting(nextTree, nextTreeOpacity);
+        }
+
+        // Todas las flores se dibujan despues del arbol para quedar en primer plano.
         const std::size_t completeFlowers = static_cast<std::size_t>(
             std::floor(seasonVisual.flowerCount)
         );
         for (std::size_t index = 0; index < completeFlowers; ++index) {
             renderFlower(renderer, flowerTextures, flowers[index], currentTicks);
+            renderGroundFlower(
+                renderer, flowerTextures, groundFlowers[index], index % 2
+            );
         }
 
         const float partialFlower = seasonVisual.flowerCount - completeFlowers;
         if (partialFlower > 0.0f && completeFlowers < flowers.size()) {
-            renderFlower(
-                renderer,
-                flowerTextures,
-                flowers[completeFlowers],
-                currentTicks,
-                static_cast<Uint8>(partialFlower * 255.0f)
-            );
+            const Uint8 opacity = static_cast<Uint8>(partialFlower * 255.0f);
+            renderFlower(renderer, flowerTextures, flowers[completeFlowers],
+                         currentTicks, opacity);
+            renderGroundFlower(renderer, flowerTextures,
+                               groundFlowers[completeFlowers], completeFlowers % 2,
+                               opacity);
         }
 
         const bool springIsCurrent = seasonSystem.current == Season::Spring;
@@ -941,25 +1138,13 @@ int main(int argc, char* argv[]) {
                         static_cast<Uint8>(tulipPresence * 255.0f));
         }
 
-        // Las nubes forman parte del fondo; el arbol se dibuja encima.
-        const bool stormy = seasonVisual.rainIntensity > 0.0f ||
-                            seasonVisual.snowIntensity > 0.0f;
-        // La precipitación se dibuja antes que las nubes para que quede detrás.
-        for (const Cloud& cloud : clouds) {
-            renderCloud(renderer, cloudTextures, cloud, stormy);
-        }
-
-        renderTree(renderer, tree);
-
         if (seasonSystem.current != Season::Winter) {
             renderCat(renderer, cat, currentTicks, !isDaytime);
         }
 
         std::size_t visibleLeaves = 0;
         Uint8 leafOpacity = 255;
-        if (seasonSystem.current == Season::Spring) {
-            visibleLeaves = 72;
-        } else if (seasonSystem.current == Season::Autumn) {
+        if (seasonSystem.current == Season::Autumn) {
             visibleLeaves = 48;
             // Las pilas se desvanecen durante el cambio de otono a invierno.
             leafOpacity = static_cast<Uint8>(
@@ -1058,6 +1243,13 @@ int main(int argc, char* argv[]) {
     }
 
     destroyTree(tree);
+    destroyTree(springTree);
+    destroyTree(summerTree);
+    destroyTree(autumnTree);
+    destroyTree(winterTree);
+    if (airplaneTexture != nullptr) {
+        SDL_DestroyTexture(airplaneTexture);
+    }
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();

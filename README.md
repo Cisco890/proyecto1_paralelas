@@ -291,3 +291,6 @@ Crear un protector de pantalla dinámico, relajante y visualmente atractivo que 
 # Algunas Screenshots
 ![primavera](image.png)
 ![invierno](image-1.png)
+![integracion de graficos nuevos](image-2.png)
+![invierno con algunos cambios](image-3.png)
+
