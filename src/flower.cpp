@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include <thread>
+#include <omp.h>
 #include <vector>
 
 namespace {
@@ -143,28 +143,27 @@ void updateFlowerPositionsParallel(
         return;
     }
 
-    const unsigned int available = std::thread::hardware_concurrency();
-    const std::size_t workerCount = std::min<std::size_t>(
-        available == 0 ? 2 : available,
-        flowers.size()
+    const int requestedThreads = std::min<int>(
+        omp_get_max_threads(), static_cast<int>(flowers.size())
     );
-    const std::size_t chunkSize = (flowers.size() + workerCount - 1) / workerCount;
-    std::vector<std::thread> workers;
-    workers.reserve(workerCount);
 
-    for (std::size_t worker = 0; worker < workerCount; ++worker) {
-        const std::size_t begin = worker * chunkSize;
+    // Cada hilo modifica un rango exclusivo. La barrera implicita al final
+    // garantiza que todas las posiciones esten listas antes del renderizado.
+    #pragma omp parallel num_threads(requestedThreads)
+    {
+        const std::size_t threadCount = static_cast<std::size_t>(
+            omp_get_num_threads()
+        );
+        const std::size_t threadIndex = static_cast<std::size_t>(
+            omp_get_thread_num()
+        );
+        const std::size_t chunkSize =
+            (flowers.size() + threadCount - 1) / threadCount;
+        const std::size_t begin = threadIndex * chunkSize;
         const std::size_t end = std::min(begin + chunkSize, flowers.size());
-
-        workers.emplace_back([&, begin, end]() {
-            updateFlowerRange(
-                flowers, textures, screenWidth, screenHeight, groundY, begin, end
-            );
-        });
-    }
-
-    for (std::thread& worker : workers) {
-        worker.join();
+        updateFlowerRange(
+            flowers, textures, screenWidth, screenHeight, groundY, begin, end
+        );
     }
 }
 

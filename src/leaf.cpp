@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <thread>
+#include <omp.h>
 
 namespace {
 const char* springPaths[3] = {
@@ -123,24 +123,29 @@ void updateLeavesParallel(std::vector<Leaf>& leaves, const LeafTextures& texture
                           const SDL_Rect& treeDest, LeafSeason season,
                           float deltaSeconds, Uint32 currentTicks) {
     if (leaves.empty()) return;
-    // No se crea un hilo por hoja: en equipos con muchos nucleos eso puede
-    // generar decenas de hilos por cuadro y hacer que SDL parezca congelado.
-    // Se conserva el paralelismo usando un grupo pequeno y estable.
-    const unsigned int available = std::max(1u, std::thread::hardware_concurrency());
-    const std::size_t workersCount = std::min<std::size_t>(
-        leaves.size(), std::min<unsigned int>(available, 8u));
-    const std::size_t chunk = (leaves.size() + workersCount - 1) / workersCount;
-    std::vector<std::thread> workers;
-    for (std::size_t w = 0; w < workersCount; ++w) {
-        const std::size_t begin = w * chunk;
+    // Ocho hilos como maximo evitan sobredimensionar la region paralela
+    // interactiva. OMP_NUM_THREADS puede reducir aun mas esta cantidad.
+    const int requestedThreads = std::min<int>(
+        8, std::min<int>(omp_get_max_threads(), static_cast<int>(leaves.size()))
+    );
+
+    #pragma omp parallel num_threads(requestedThreads)
+    {
+        const std::size_t threadCount = static_cast<std::size_t>(
+            omp_get_num_threads()
+        );
+        const std::size_t threadIndex = static_cast<std::size_t>(
+            omp_get_thread_num()
+        );
+        const std::size_t chunk =
+            (leaves.size() + threadCount - 1) / threadCount;
+        const std::size_t begin = threadIndex * chunk;
         const std::size_t end = std::min(begin + chunk, leaves.size());
-        workers.emplace_back([&, begin, end]() {
-            updateLeafRange(
-                leaves, textures, treeDest, season, deltaSeconds, currentTicks, begin, end
-            );
-        });
+        updateLeafRange(
+            leaves, textures, treeDest, season, deltaSeconds, currentTicks,
+            begin, end
+        );
     }
-    for (auto& worker : workers) worker.join();
 }
 
 void renderLeaves(SDL_Renderer* renderer, const LeafTextures& textures,

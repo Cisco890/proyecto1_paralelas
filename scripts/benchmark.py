@@ -2,13 +2,14 @@
 """Ejecuta mediciones repetidas del benchmark secuencial/paralelo.
 
 Uso:
-    python3 scripts/benchmark.py --binary ./screensaver --runs 10 --workers 8
+    python3 scripts/benchmark.py --binary ./screensaver --runs 10 --workers 4
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import os
 import re
 import statistics
 import subprocess
@@ -37,18 +38,22 @@ def parse_args() -> argparse.Namespace:
                         help="ruta al ejecutable compilado")
     parser.add_argument("--runs", type=int, default=10,
                         help="mediciones por modo, mínimo recomendado: 10")
-    parser.add_argument("--workers", type=int, default=8,
+    parser.add_argument("--workers", type=int, default=4,
                         help="workers usados para calcular eficiencia")
     parser.add_argument("--output-dir", default="output/benchmark",
                         help="directorio de salida")
     return parser.parse_args()
 
 
-def execute(binary: Path, mode: str) -> tuple[dict[str, dict], str]:
+def execute(binary: Path, mode: str, workers: int) -> tuple[dict[str, dict], str]:
     command = [str(binary), "--benchmark", f"--{mode}"]
+    environment = os.environ.copy()
+    environment["OMP_NUM_THREADS"] = str(workers)
+    environment["OMP_DYNAMIC"] = "FALSE"
     completed = subprocess.run(
         command,
         cwd=binary.parent,
+        env=environment,
         text=True,
         capture_output=True,
         check=False,
@@ -160,7 +165,7 @@ def write_report(path: Path, summary: list[dict]) -> None:
         "",
         "Los valores son promedios de las mediciones ejecutadas por `scripts/benchmark.py`.",
         "",
-        "| Algoritmo | n | Sec. ms | Par. ms | Speedup | Eficiencia | Desv. sec. | Desv. par. |",
+        "| Algoritmo | Mediciones | Sec. ms | Par. ms | Speedup | Eficiencia | Desv. sec. | Desv. par. |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in summary:
@@ -194,7 +199,7 @@ def main() -> int:
     console: list[str] = []
     for run in range(1, args.runs + 1):
         for mode in ("sequential", "parallel"):
-            parsed, raw = execute(binary, mode)
+            parsed, raw = execute(binary, mode, args.workers)
             console.append(f"===== run {run} {mode} =====\n{raw}")
             for algorithm in ALGORITHMS:
                 result = parsed[algorithm]

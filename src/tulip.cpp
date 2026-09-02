@@ -1,7 +1,7 @@
 #include "tulip.hpp"
 
 #include <algorithm>
-#include <thread>
+#include <omp.h>
 
 namespace {
 void updateTulipRange(std::vector<Tulip>& tulips,
@@ -56,23 +56,28 @@ void updateTulipPositionsSequential(std::vector<Tulip>& tulips,
 
 void updateTulipPositionsParallel(std::vector<Tulip>& tulips,
                                   const TulipTextures& textures,
-                                  int screenWidth, int screenHeight, int groundY) {
+    int screenWidth, int screenHeight, int groundY) {
     if (tulips.empty()) return;
-    const unsigned int available = std::thread::hardware_concurrency();
-    const std::size_t workerCount = std::min<std::size_t>(
-        available == 0 ? 2 : available, tulips.size());
-    const std::size_t chunk = (tulips.size() + workerCount - 1) / workerCount;
-    std::vector<std::thread> workers;
-    for (std::size_t worker = 0; worker < workerCount; ++worker) {
-        const std::size_t begin = worker * chunk;
+    const int requestedThreads = std::min<int>(
+        omp_get_max_threads(), static_cast<int>(tulips.size())
+    );
+
+    #pragma omp parallel num_threads(requestedThreads)
+    {
+        const std::size_t threadCount = static_cast<std::size_t>(
+            omp_get_num_threads()
+        );
+        const std::size_t threadIndex = static_cast<std::size_t>(
+            omp_get_thread_num()
+        );
+        const std::size_t chunk =
+            (tulips.size() + threadCount - 1) / threadCount;
+        const std::size_t begin = threadIndex * chunk;
         const std::size_t end = std::min(begin + chunk, tulips.size());
-        workers.emplace_back([&, begin, end]() {
-            updateTulipRange(
-                tulips, textures, screenWidth, screenHeight, groundY, begin, end
-            );
-        });
+        updateTulipRange(
+            tulips, textures, screenWidth, screenHeight, groundY, begin, end
+        );
     }
-    for (std::thread& worker : workers) worker.join();
 }
 
 void renderTulip(SDL_Renderer* renderer, const TulipTextures& textures,

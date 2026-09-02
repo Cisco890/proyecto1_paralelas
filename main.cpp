@@ -8,9 +8,9 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <omp.h>
 #include <string>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 
 #include "src/bird.hpp"
@@ -770,9 +770,7 @@ int main(int argc, char* argv[]) {
     Uint32 fpsSampleStart = previousTicks;
     int renderedFrames = 0;
     int displayedFps = 0;
-    const unsigned int availableThreads = std::max(
-        1u, std::thread::hardware_concurrency()
-    );
+    const int availableThreads = std::max(1, omp_get_max_threads());
     std::array<SeasonMetric, 4> seasonMetrics{};
     auto metricsSampleStart = std::chrono::steady_clock::now();
     auto frameStart = metricsSampleStart;
@@ -1298,8 +1296,7 @@ int main(int argc, char* argv[]) {
                       << " | elementos: " << countActiveElements(
                              seasonVisual, seasonSystem.current, isDaytime,
                              std::min(flowers.size(), groundFlowers.size()))
-                      << " | hilos CPU: " << availableThreads
-                      << " | hilos hojas: 8"
+                      << " | hilos OpenMP: " << availableThreads
                       << std::endl;
             metricsSampleStart = frameEnd;
         }

@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include <thread>
+#include <omp.h>
 
 namespace {
 constexpr int cloudRenderScale = 2;
@@ -110,21 +110,26 @@ void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
                                   int screenWidth, int screenHeight,
                                   float deltaSeconds) {
     if (clouds.empty() || screenWidth <= 0 || screenHeight <= 0) return;
-    const unsigned int available = std::thread::hardware_concurrency();
-    const std::size_t workersCount = std::min<std::size_t>(
-        available == 0 ? 2 : available, clouds.size());
-    const std::size_t chunk = (clouds.size() + workersCount - 1) / workersCount;
-    std::vector<std::thread> workers;
-    for (std::size_t worker = 0; worker < workersCount; ++worker) {
-        const std::size_t begin = worker * chunk;
+    const int requestedThreads = std::min<int>(
+        omp_get_max_threads(), static_cast<int>(clouds.size())
+    );
+
+    #pragma omp parallel num_threads(requestedThreads)
+    {
+        const std::size_t threadCount = static_cast<std::size_t>(
+            omp_get_num_threads()
+        );
+        const std::size_t threadIndex = static_cast<std::size_t>(
+            omp_get_thread_num()
+        );
+        const std::size_t chunk =
+            (clouds.size() + threadCount - 1) / threadCount;
+        const std::size_t begin = threadIndex * chunk;
         const std::size_t end = std::min(begin + chunk, clouds.size());
-        workers.emplace_back([&, begin, end]() {
-            updateCloudRange(
-                clouds, textures, screenWidth, screenHeight, deltaSeconds, begin, end
-            );
-        });
+        updateCloudRange(
+            clouds, textures, screenWidth, screenHeight, deltaSeconds, begin, end
+        );
     }
-    for (std::thread& worker : workers) worker.join();
 }
 
 void renderCloud(SDL_Renderer* renderer, const CloudTextures& textures,

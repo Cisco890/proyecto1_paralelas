@@ -47,19 +47,20 @@ opacidad. Tambien se pueden probar manualmente desde la ventana:
 - `4`: invierno
 - `Esc`: salir
 
-### Comparación secuencial vs paralela
+### Comparación secuencial vs paralela con OpenMP
 
-Se agregaron rutas secuenciales para las actualizaciones de:
+Se agregaron rutas secuenciales y paralelas con OpenMP para las actualizaciones de:
 
 - flores
 - tulipanes
 - nubes
 - hojas
 
-La animacion ahora puede ejecutarse en cualquiera de los dos modos:
+La animacion ahora puede ejecutarse en cualquiera de los dos modos. La cantidad
+de hilos se controla con `OMP_NUM_THREADS`:
 
 ```bash
-./screensaver --parallel
+OMP_NUM_THREADS=4 ./screensaver --parallel
 ./screensaver --sequential
 ```
 
@@ -75,6 +76,13 @@ Si quieres medir solo un modo:
 ```bash
 ./screensaver --benchmark --parallel
 ./screensaver --benchmark --sequential
+```
+
+La bitácora reproducible usa cuatro hilos, que fue la configuración con mejor
+balance entre aceleración y sobrecarga en el equipo de prueba:
+
+```bash
+python3 scripts/benchmark.py --binary ./screensaver --runs 10 --workers 4
 ```
 
 Tambien se puede activar con `SCREENSAVER_BENCHMARK=1 ./screensaver`. El
@@ -95,7 +103,7 @@ en cada `SeasonProfile` y se interpolan durante los cambios de estacion.
 Compilación manual equivalente:
 
 ```bash
-g++ -std=c++17 -I. -o screensaver main.cpp src/bird.cpp src/tree.cpp \
+g++ -std=c++17 -fopenmp -I. -o screensaver main.cpp src/bird.cpp src/tree.cpp \
   $(pkg-config --cflags --libs sdl2 SDL2_image)
 ```
 

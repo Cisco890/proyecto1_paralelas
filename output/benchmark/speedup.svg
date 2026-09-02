@@ -4,16 +4,16 @@
 <text x="20" y="260.0" transform="rotate(-90 20 260.0)" text-anchor="middle" font-size="14" font-family="sans-serif">speedup</text>
 <line x1="90" y1="440" x2="840" y2="440" stroke="black"/>
 <line x1="90" y1="440" x2="90" y2="90" stroke="black"/>
-<rect x="125.6" y="356.1" width="116.2" height="83.9" fill="#357edd"/>
-<text x="183.8" y="348.1" text-anchor="middle" font-size="13" font-family="sans-serif">1.153</text>
+<rect x="125.6" y="148.3" width="116.2" height="291.7" fill="#357edd"/>
+<text x="183.8" y="140.3" text-anchor="middle" font-size="13" font-family="sans-serif">2.407</text>
 <text x="183.8" y="465" text-anchor="middle" font-size="13" font-family="sans-serif">Flores</text>
-<rect x="313.1" y="324.3" width="116.2" height="115.7" fill="#357edd"/>
-<text x="371.2" y="316.3" text-anchor="middle" font-size="13" font-family="sans-serif">1.591</text>
+<rect x="313.1" y="181.8" width="116.2" height="258.2" fill="#357edd"/>
+<text x="371.2" y="173.8" text-anchor="middle" font-size="13" font-family="sans-serif">2.131</text>
 <text x="371.2" y="465" text-anchor="middle" font-size="13" font-family="sans-serif">Tulipanes</text>
-<rect x="500.6" y="401.6" width="116.2" height="38.4" fill="#357edd"/>
-<text x="558.8" y="393.6" text-anchor="middle" font-size="13" font-family="sans-serif">0.528</text>
+<rect x="500.6" y="207.3" width="116.2" height="232.7" fill="#357edd"/>
+<text x="558.8" y="199.3" text-anchor="middle" font-size="13" font-family="sans-serif">1.920</text>
 <text x="558.8" y="465" text-anchor="middle" font-size="13" font-family="sans-serif">Nubes</text>
-<rect x="688.1" y="148.3" width="116.2" height="291.7" fill="#357edd"/>
-<text x="746.2" y="140.3" text-anchor="middle" font-size="13" font-family="sans-serif">4.010</text>
+<rect x="688.1" y="183.5" width="116.2" height="256.5" fill="#357edd"/>
+<text x="746.2" y="175.5" text-anchor="middle" font-size="13" font-family="sans-serif">2.117</text>
 <text x="746.2" y="465" text-anchor="middle" font-size="13" font-family="sans-serif">Hojas</text>
 </svg>
