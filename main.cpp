@@ -27,6 +27,7 @@
 #include "src/tree.hpp"
 #include "src/tulip.hpp"
 #include "src/weather.hpp"
+#include "src/wildlife_update.hpp"
 
 namespace {
 float getDaylightFactor(Uint32 ticks) {
@@ -182,8 +183,39 @@ int main(int argc, char* argv[]) {
     UpdateExecutionMode executionMode = UpdateExecutionMode::Parallel;
     UpdateExecutionMode benchmarkMode = UpdateExecutionMode::Compare;
     constexpr std::size_t defaultFlowerCount = 36;
-    constexpr std::size_t maximumFlowerCount = 100000;
+    constexpr std::size_t maximumElementCount = 100000;
     std::size_t flowerCount = defaultFlowerCount;
+    std::size_t tulipCount = 20;
+    std::size_t cloudCount = 14;
+    std::size_t grassCount = 72;
+    std::size_t leafCount = 72;
+    std::size_t rainCount = 220;
+    std::size_t snowCount = 150;
+    std::size_t starCount = 90;
+    std::size_t birdCount = 3;
+    bool forceFlowerCount = false;
+    bool forceElementCounts = false;
+    auto readElementCount = [&](const std::string& option, std::size_t& target,
+                                int& argumentIndex) -> bool {
+        if (argumentIndex + 1 >= argc) {
+            std::cerr << "Error: " << option << " requiere una cantidad entera.\n";
+            return false;
+        }
+        const std::string value = argv[++argumentIndex];
+        try {
+            std::size_t consumed = 0;
+            const unsigned long long parsed = std::stoull(value, &consumed);
+            if (consumed != value.size() || parsed > maximumElementCount) {
+                throw std::out_of_range("cantidad fuera de rango");
+            }
+            target = static_cast<std::size_t>(parsed);
+            return true;
+        } catch (const std::exception&) {
+            std::cerr << "Error: " << option << " debe estar entre 0 y "
+                      << maximumElementCount << ".\n";
+            return false;
+        }
+    };
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
         if (argument == "--benchmark") {
@@ -194,26 +226,28 @@ int main(int argc, char* argv[]) {
         } else if (argument == "--parallel") {
             executionMode = UpdateExecutionMode::Parallel;
             benchmarkMode = UpdateExecutionMode::Parallel;
+        } else if (argument == "--force-flowers") {
+            forceFlowerCount = true;
+        } else if (argument == "--force-elements") {
+            forceElementCounts = true;
         } else if (argument == "--flowers") {
-            if (index + 1 >= argc) {
-                std::cerr << "Error: --flowers requiere una cantidad entera.\n";
-                return 2;
-            }
-
-            const std::string value = argv[++index];
-            try {
-                std::size_t consumed = 0;
-                const unsigned long long parsed = std::stoull(value, &consumed);
-                if (consumed != value.size() ||
-                    parsed > maximumFlowerCount) {
-                    throw std::out_of_range("cantidad fuera de rango");
-                }
-                flowerCount = static_cast<std::size_t>(parsed);
-            } catch (const std::exception&) {
-                std::cerr << "Error: --flowers debe estar entre 0 y "
-                          << maximumFlowerCount << ".\n";
-                return 2;
-            }
+            if (!readElementCount(argument, flowerCount, index)) return 2;
+        } else if (argument == "--tulips") {
+            if (!readElementCount(argument, tulipCount, index)) return 2;
+        } else if (argument == "--clouds") {
+            if (!readElementCount(argument, cloudCount, index)) return 2;
+        } else if (argument == "--grass") {
+            if (!readElementCount(argument, grassCount, index)) return 2;
+        } else if (argument == "--leaves") {
+            if (!readElementCount(argument, leafCount, index)) return 2;
+        } else if (argument == "--rain") {
+            if (!readElementCount(argument, rainCount, index)) return 2;
+        } else if (argument == "--snow") {
+            if (!readElementCount(argument, snowCount, index)) return 2;
+        } else if (argument == "--stars") {
+            if (!readElementCount(argument, starCount, index)) return 2;
+        } else if (argument == "--birds") {
+            if (!readElementCount(argument, birdCount, index)) return 2;
         }
     }
 
@@ -448,6 +482,25 @@ int main(int argc, char* argv[]) {
     blueBird.height = 90;
     birds.push_back(blueBird);
 
+    const std::size_t loadedBirdCount = birds.size();
+    if (birdCount < loadedBirdCount) {
+        for (std::size_t index = birdCount; index < loadedBirdCount; ++index) {
+            destroyBird(birds[index]);
+        }
+        birds.resize(birdCount);
+    } else {
+        birds.reserve(birdCount);
+        for (std::size_t index = loadedBirdCount; index < birdCount; ++index) {
+            Bird copy = birds[index % loadedBirdCount];
+            copy.ownsTextures = false;
+            copy.x = static_cast<float>((index * 97) % std::max(1, displayBounds.w));
+            copy.y = static_cast<float>(displayBounds.h) *
+                (0.12f + static_cast<float>(index % 30) / 100.0f);
+            copy.animationOffset += static_cast<Uint32>(index * 71);
+            birds.push_back(copy);
+        }
+    }
+
     FlowerTextures flowerTextures;
 
     if (!loadFlowerTextures(
@@ -569,7 +622,7 @@ int main(int argc, char* argv[]) {
                 "assets/rain/water_drop_frame_2.png",
                 "assets/rain/water_drop_frame_3.png"
             },
-            220,
+            rainCount,
             4,
             420.0f,
             180.0f
@@ -602,7 +655,7 @@ int main(int argc, char* argv[]) {
                 "assets/snow/snowflake_2.png",
                 "assets/snow/snowflake_3.png"
             },
-            150,
+            snowCount,
             2,
             55.0f,
             65.0f
@@ -777,13 +830,12 @@ int main(int argc, char* argv[]) {
     SeasonSystem seasonSystem = createSeasonSystem(previousTicks);
     std::vector<Flower> flowers = createFlowerField(flowerCount);
     std::vector<Flower> groundFlowers = createFlowerField(flowerCount);
-    std::vector<Tulip> tulips = createTulipField(20);
+    std::vector<Tulip> tulips = createTulipField(tulipCount);
     // Mantiene la cantidad y distribucion de nubes de la rama main.
-    std::vector<Cloud> clouds = createCloudField(14);
-    std::vector<GrassBlade> grass = createGrassField(72);
-    std::vector<Leaf> leaves = createLeafField(72);
-    constexpr std::size_t maximumStarCount = 90;
-    std::vector<Star> stars = createStarField(maximumStarCount);
+    std::vector<Cloud> clouds = createCloudField(cloudCount);
+    std::vector<GrassBlade> grass = createGrassField(grassCount);
+    std::vector<Leaf> leaves = createLeafField(leafCount);
+    std::vector<Star> stars = createStarField(starCount);
     float airplaneX = -0.12f;
     int previousFlowerScreenWidth = -1;
     int previousFlowerScreenHeight = -1;
@@ -849,42 +901,42 @@ int main(int argc, char* argv[]) {
             &screenHeight
         );
 
-        const float daylight = getDaylightFactor(currentTicks);
+        const float daylight = getDaylightFactor(currentTicks) * seasonVisual.sunlight;
         const float daytimePresence = std::clamp(
             (daylight - 0.30f) / 0.35f, 0.0f, 1.0f
         );
         const bool isDaytime = daytimePresence > 0.05f;
 
-        if (isDaytime) {
-            for (Bird& currentBird : birds) {
-                updateBird(
-                    currentBird,
-                    screenWidth,
-                    screenHeight,
-                    deltaSeconds
-                );
-            }
-        }
-
         // El suelo comienza al 85% de la altura
         int groundY = static_cast<int>(screenHeight * 0.85);
 
         updateCelestialBody(
-            sun, screenWidth, screenHeight, groundY, currentTicks
+            sun, screenWidth, screenHeight, groundY, currentTicks, seasonVisual.sunScale
         );
         updateCelestialBody(
             moon, screenWidth, screenHeight, groundY, currentTicks
         );
 
-        if (isDaytime) {
-            updateFlyingAnimal(bee, screenWidth, groundY, deltaSeconds, currentTicks);
-            updateFlyingAnimal(
-                butterfly, screenWidth, groundY, deltaSeconds, currentTicks
-            );
+        const float rainIntensity = forceElementCounts ? 1.0f
+                                                       : seasonVisual.rainIntensity;
+        const float snowIntensity = forceElementCounts ? 1.0f
+                                                       : seasonVisual.snowIntensity;
+        SeasonVisualState wildlifeVisual = seasonVisual;
+        if (forceElementCounts) {
+            wildlifeVisual.beePresence = 1.0f;
+            wildlifeVisual.butterflyPresence = 1.0f;
+            wildlifeVisual.birdPresence = 1.0f;
         }
-        const float rainIntensity = seasonSystem.current == Season::Winter
-            ? 0.0f
-            : seasonVisual.rainIntensity;
+        const bool wildlifeDaytime = forceElementCounts || isDaytime;
+        if (executionMode == UpdateExecutionMode::Sequential) {
+            updateWildlifeSequential(birds, bee, butterfly, wildlifeVisual, wildlifeDaytime,
+                                     screenWidth, screenHeight, groundY,
+                                     deltaSeconds, currentTicks);
+        } else {
+            updateWildlifeParallel(birds, bee, butterfly, wildlifeVisual, wildlifeDaytime,
+                                   screenWidth, screenHeight, groundY,
+                                   deltaSeconds, currentTicks);
+        }
         auto updateWeather = [&](WeatherSystem& system, float intensity) {
             if (executionMode == UpdateExecutionMode::Parallel) {
                 updateWeatherSystemParallel(
@@ -897,7 +949,7 @@ int main(int argc, char* argv[]) {
             }
         };
         updateWeather(rain, rainIntensity);
-        updateWeather(snow, seasonVisual.snowIntensity);
+        updateWeather(snow, snowIntensity);
         if (executionMode == UpdateExecutionMode::Sequential) {
             updateCloudPositionsSequential(
                 clouds, cloudTextures, screenWidth, screenHeight, deltaSeconds
@@ -923,19 +975,21 @@ int main(int argc, char* argv[]) {
         updateTreePosition(nextTree, screenWidth, groundY);
         updateCat(cat, screenWidth, groundY, deltaSeconds, isDaytime);
 
-        LeafSeason leafSeason = LeafSeason::Spring;
-        if (seasonSystem.current == Season::Autumn) {
-            leafSeason = LeafSeason::Autumn;
-        }
+        const bool hasTreeLeaves = forceElementCounts ||
+            seasonSystem.current != Season::Winter;
+        LeafSeason leafSeason = forceElementCounts || seasonSystem.current == Season::Autumn
+            ? LeafSeason::Autumn : LeafSeason::Spring;
         // Las hojas se actualizan en paralelo: cada hilo trabaja sobre un bloque
         // independiente y la fase de animacion no toca SDL.
-        if (executionMode == UpdateExecutionMode::Sequential) {
+        if (hasTreeLeaves && executionMode == UpdateExecutionMode::Sequential) {
             updateLeavesSequential(
-                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds, currentTicks
+                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds,
+                currentTicks, forceElementCounts ? 1.0f : seasonVisual.seasonProgress
             );
-        } else {
+        } else if (hasTreeLeaves) {
             updateLeavesParallel(
-                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds, currentTicks
+                leaves, leafTextures, activeTree.dest, leafSeason, deltaSeconds,
+                currentTicks, forceElementCounts ? 1.0f : seasonVisual.seasonProgress
             );
         }
 
@@ -1039,11 +1093,12 @@ int main(int argc, char* argv[]) {
             screenWidth,
             groundY,
             currentTicks,
-            maximumStarCount * nightPresence
+            static_cast<float>(stars.size()) * (forceElementCounts ? 1.0f : nightPresence)
         );
 
         // Se dibujan al fondo para que las nubes y el arbol puedan ocultarlos.
-        renderCelestialBody(renderer, sun);
+        renderCelestialBody(renderer, sun,
+                            static_cast<Uint8>(seasonVisual.sunlight * 255.0f));
         renderCelestialBody(renderer, moon);
 
         // Suelo temporal
@@ -1075,7 +1130,7 @@ int main(int argc, char* argv[]) {
         // La lluvia queda detras del pasto y las flores, pero encima del
         // suelo para que el impacto de la gota siga siendo visible.
         renderWeatherSystem(renderer, rain, rainIntensity);
-        renderWeatherSystem(renderer, snow, seasonVisual.snowIntensity);
+        renderWeatherSystem(renderer, snow, snowIntensity);
 
         std::size_t grassSeason = 0;
         if (seasonSystem.current == Season::Summer) grassSeason = 1;
@@ -1088,7 +1143,8 @@ int main(int argc, char* argv[]) {
             screenHeight,
             groundY,
             currentTicks,
-            seasonVisual.grassCount,
+            forceElementCounts ? static_cast<float>(grass.size())
+                               : seasonVisual.grassCount,
             grassSeason
         );
 
@@ -1117,13 +1173,35 @@ int main(int argc, char* argv[]) {
             (1.0f - rainBlend) * (1.0f - daytimePresence) * 255.0f
         );
         const Uint8 rainCloudOpacity = static_cast<Uint8>(rainBlend * 255.0f);
-        for (const Cloud& cloud : clouds) {
+        const std::size_t normalCloudCount = std::max<std::size_t>(
+            1, static_cast<std::size_t>(std::ceil(4.0f * seasonVisual.cloudCoverage))
+        );
+        const std::size_t stormCloudBase = std::min<std::size_t>(3, clouds.size());
+        const std::size_t cloudCount = forceElementCounts
+            ? clouds.size()
+            : (rainBlend > 0.01f
+                ? static_cast<std::size_t>(stormCloudBase + rainBlend *
+                    (clouds.size() - stormCloudBase))
+                : normalCloudCount);
+        for (std::size_t index = 0; index < std::min(cloudCount, clouds.size()); ++index) {
+            const Cloud& cloud = clouds[index];
             renderCloud(renderer, cloudTextures, cloud, false, false,
                         dayCloudOpacity);
             renderCloud(renderer, cloudTextures, cloud, true, false,
                         nightCloudOpacity);
             renderCloud(renderer, cloudTextures, cloud, false, true,
-                        rainCloudOpacity);
+                        rainCloudOpacity, -static_cast<int>(screenHeight * 0.10f));
+        }
+
+        // Se dibujan antes del arbol para que el tronco y la copa siempre
+        // oculten las hojas otonales que pasan por delante de ellos.
+        if (forceElementCounts || seasonSystem.current == Season::Autumn) {
+            const Uint8 leafOpacity = static_cast<Uint8>(
+                (1.0f - seasonVisual.transitionProgress) * 255.0f
+            );
+            renderLeaves(renderer, leafTextures, leaves, LeafSeason::Autumn,
+                         forceElementCounts ? leaves.size() : 48, currentTicks, leafOpacity,
+                         seasonVisual.transitionProgress);
         }
 
         const float seasonProgress = seasonVisual.transitionProgress;
@@ -1147,10 +1225,9 @@ int main(int argc, char* argv[]) {
         // visual anterior. Se limita al tamaño real de ambos vectores para
         // evitar acceder a flowers[index] fuera de rango cuando se usa
         // --flowers con una cantidad menor al valor predeterminado.
-        const bool springIsCurrent = seasonSystem.current == Season::Spring;
-        const bool springIsNext = getNextSeason(seasonSystem.current) == Season::Spring;
-        float tulipPresence = springIsCurrent ? 1.0f : 0.0f;
-        if (springIsNext) tulipPresence = seasonVisual.transitionProgress;
+        const bool forceFlowers = forceFlowerCount || forceElementCounts;
+        const float tulipPresence = forceFlowerCount && !forceElementCounts
+            ? 0.0f : seasonVisual.tulipPresence;
 
         // `--flowers N` es un presupuesto global. Se reparte según la
         // cantidad solicitada por la estación para que los tulipanes no se
@@ -1168,15 +1245,18 @@ int main(int argc, char* argv[]) {
         const std::size_t flowerCapacity = std::min(
             flowers.size(), groundFlowers.size()
         );
-        const float visibleFlowerCount = std::clamp(
-            seasonVisual.flowerCount * flowerBudgetScale,
-            0.0f,
-            static_cast<float>(flowerCapacity)
-        );
-        const float visibleTulipCount = std::min(
-            requestedTulipCount * flowerBudgetScale,
-            static_cast<float>(tulips.size())
-        );
+        const float visibleFlowerCount = forceFlowers
+            ? std::min(static_cast<float>(flowerCount),
+                       static_cast<float>(flowerCapacity))
+            : std::clamp(
+                seasonVisual.flowerCount * flowerBudgetScale,
+                0.0f,
+                static_cast<float>(flowerCapacity)
+            );
+        const float visibleTulipCount = forceElementCounts
+            ? static_cast<float>(tulips.size())
+            : std::min(requestedTulipCount * flowerBudgetScale,
+                       static_cast<float>(tulips.size()));
         // La flag representa el total combinado y se distribuye entre las
         // flores rosas animadas y las flores de suelo.
         const float pinkFlowerCount = std::min(
@@ -1235,34 +1315,26 @@ int main(int argc, char* argv[]) {
             renderCat(renderer, cat, currentTicks, !isDaytime);
         }
 
-        std::size_t visibleLeaves = 0;
-        Uint8 leafOpacity = 255;
-        if (seasonSystem.current == Season::Autumn) {
-            visibleLeaves = 48;
-            // Las pilas se desvanecen durante el cambio de otono a invierno.
-            leafOpacity = static_cast<Uint8>(
-                (1.0f - seasonVisual.transitionProgress) * 255.0f
-            );
-        }
-        renderLeaves(renderer, leafTextures, leaves, leafSeason,
-                     visibleLeaves, currentTicks, leafOpacity);
-
-        if (isDaytime) {
+        if (wildlifeDaytime && wildlifeVisual.birdPresence > 0.01f) {
             renderFlyingAnimal(
                 renderer,
                 bee,
                 currentTicks,
-                static_cast<Uint8>(seasonVisual.beePresence * daytimePresence * 255.0f)
+                static_cast<Uint8>(wildlifeVisual.beePresence *
+                    (forceElementCounts ? 1.0f : daytimePresence) * 255.0f)
             );
             renderFlyingAnimal(
                 renderer,
                 butterfly,
                 currentTicks,
-                static_cast<Uint8>(seasonVisual.butterflyPresence * daytimePresence * 255.0f)
+                static_cast<Uint8>(wildlifeVisual.butterflyPresence *
+                    (forceElementCounts ? 1.0f : daytimePresence) * 255.0f)
             );
 
             for (const Bird& currentBird : birds) {
-                renderBird(renderer, currentBird);
+                renderBird(renderer, currentBird,
+                           static_cast<Uint8>(wildlifeVisual.birdPresence *
+                               (forceElementCounts ? 1.0f : daytimePresence) * 255.0f));
             }
         }
 

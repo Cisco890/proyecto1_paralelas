@@ -16,6 +16,7 @@ struct Bird {
     SDL_Texture* texture;
     std::array<SDL_Texture*, 3> animationFrames{};
     Uint32 animationOffset = 0;
+    bool ownsTextures = true;
 };
 
 // Carga el PNG y deja el pajaro listo para usarse.
@@ -47,6 +48,6 @@ void updateBird(
     float deltaSeconds
 );
 
-void renderBird(SDL_Renderer* renderer, const Bird& bird);
+void renderBird(SDL_Renderer* renderer, const Bird& bird, Uint8 opacity = 255);
 
 #endif

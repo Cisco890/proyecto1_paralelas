@@ -133,12 +133,15 @@ void updateCloudPositionsParallel(std::vector<Cloud>& clouds,
 }
 
 void renderCloud(SDL_Renderer* renderer, const CloudTextures& textures,
-                 const Cloud& cloud, bool night, bool stormy, Uint8 opacity) {
+                 const Cloud& cloud, bool night, bool stormy, Uint8 opacity,
+                 int verticalOffset) {
     if (opacity == 0) return;
     const auto& frames = stormy ? textures.rain
                                 : (night ? textures.night : textures.day);
     SDL_Texture* texture = frames[cloud.variant];
+    SDL_Rect destination = cloud.dest;
+    destination.y += verticalOffset;
     SDL_SetTextureAlphaMod(texture, opacity);
-    SDL_RenderCopy(renderer, texture, nullptr, &cloud.dest);
+    SDL_RenderCopy(renderer, texture, nullptr, &destination);
     SDL_SetTextureAlphaMod(texture, 255);
 }

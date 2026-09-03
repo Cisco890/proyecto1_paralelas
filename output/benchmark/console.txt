@@ -1,159 +1,159 @@
 ===== run 1 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 284.427 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 393.572 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 251.626 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 843.931 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 321.007 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 171.006 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 141.276 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 84.525 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 430.922 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 108.804 ms
 
 ===== run 1 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 77.621 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 107.653 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 67.207 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 220.858 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 81.245 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 28.546 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.510 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 23.151 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 114.532 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.008 ms
 
 ===== run 2 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 286.929 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 398.952 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 254.879 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 830.830 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 321.341 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 98.690 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 136.844 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 85.001 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 400.672 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 108.608 ms
 
 ===== run 2 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 78.584 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 105.604 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 66.913 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 215.512 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 76.709 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 39.883 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 39.943 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 23.498 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 107.349 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 28.682 ms
 
 ===== run 3 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 290.471 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 401.466 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 253.727 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 820.162 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 320.807 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 104.067 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 138.982 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 86.370 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 391.527 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 110.266 ms
 
 ===== run 3 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 76.574 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 104.976 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 65.506 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 219.909 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 78.116 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 30.146 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.065 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 25.428 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 107.109 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.258 ms
 
 ===== run 4 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 287.584 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 403.331 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 254.392 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 848.946 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 326.127 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 100.944 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 138.693 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 87.307 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 391.708 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 111.476 ms
 
 ===== run 4 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 83.364 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 106.365 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 68.250 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 215.299 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 76.934 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 33.210 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.486 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 32.847 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 107.539 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.078 ms
 
 ===== run 5 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 287.278 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 400.107 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 255.699 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 839.291 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 330.531 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 101.099 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 139.370 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 87.841 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 393.594 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 111.484 ms
 
 ===== run 5 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 72.909 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 108.904 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 72.044 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 218.103 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 75.857 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 38.743 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.122 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 23.248 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 121.671 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.319 ms
 
 ===== run 6 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 287.468 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 397.488 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 254.470 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 852.628 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 320.662 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 102.261 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 141.525 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 88.192 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 399.376 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 112.853 ms
 
 ===== run 6 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 74.336 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 108.790 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 69.373 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 216.802 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 78.970 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 39.670 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 38.486 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 23.050 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 119.386 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 29.694 ms
 
 ===== run 7 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 288.939 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 402.961 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 254.878 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 836.572 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 321.776 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 100.965 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 140.034 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 87.662 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 396.864 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 112.740 ms
 
 ===== run 7 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 75.467 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 105.689 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 68.170 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 215.487 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 75.218 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 35.839 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 51.206 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 23.160 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 111.311 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.662 ms
 
 ===== run 8 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 286.585 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 399.575 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 250.196 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 832.625 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 321.814 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 103.287 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 141.579 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 89.259 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 398.371 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 113.995 ms
 
 ===== run 8 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 74.707 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 106.313 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 69.111 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 217.142 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 75.285 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 49.585 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 38.097 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 24.287 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 118.504 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.250 ms
 
 ===== run 9 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 286.513 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 398.227 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 252.615 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 826.879 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 320.063 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 101.459 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 142.987 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 88.646 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 403.009 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 113.056 ms
 
 ===== run 9 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 75.081 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 104.654 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 67.409 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 215.653 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 76.268 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 33.154 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 37.925 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 40.569 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 115.078 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.392 ms
 
 ===== run 10 sequential =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 288.692 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 404.933 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 255.599 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 831.463 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 321.111 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 114.902 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 142.298 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: secuencial | tiempo: 88.776 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: secuencial | tiempo: 405.610 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: secuencial | tiempo: 115.495 ms
 
 ===== run 10 parallel =====
 Benchmark de un solo modo
-Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 73.311 ms
-Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 103.870 ms
-Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 67.601 ms
-Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 219.828 ms
-Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 79.645 ms
+Flores | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 30.138 ms
+Tulipanes | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 38.699 ms
+Nubes | elementos: 60000 | iteraciones: 360 | modo: paralelo | tiempo: 26.855 ms
+Hojas | elementos: 150000 | iteraciones: 220 | modo: paralelo | tiempo: 111.917 ms
+Clima | elementos: 120000 | iteraciones: 180 | modo: paralelo | tiempo: 27.767 ms

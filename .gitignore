@@ -34,5 +34,9 @@ compile_commands.json
 *.log
 *.tmp
 *.bak
+benchmark_results.csv
+benchmark_chart.svg
+benchmark_scalability.csv
+benchmark_scalability.svg
 
 docs/

@@ -52,7 +52,8 @@ void renderCloud(
     const Cloud& cloud,
     bool night,
     bool stormy,
-    Uint8 opacity = 255
+    Uint8 opacity = 255,
+    int verticalOffset = 0
 );
 
 #endif

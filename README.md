@@ -64,6 +64,29 @@ OMP_NUM_THREADS=4 ./screensaver --parallel
 ./screensaver --sequential
 ```
 
+Por defecto, las estaciones controlan cuantas flores se ven. Para ignorar ese
+limite y dibujar exactamente la cantidad indicada, usa `--force-flowers` junto
+con `--flowers`:
+
+```bash
+./screensaver --parallel --flowers 500 --force-flowers
+./screensaver --sequential --flowers 500 --force-flowers
+```
+
+`--force-elements` extiende este comportamiento a los elementos repetibles y
+mantiene visibles sus cantidades sin depender de la estacion. Los conteos
+aceptados son de `0` a `100000`:
+
+```bash
+./screensaver --parallel --force-elements \
+  --flowers 500 --tulips 100 --clouds 30 --grass 800 \
+  --leaves 300 --rain 600 --snow 400 --stars 150 --birds 20
+```
+
+Los flags disponibles son `--flowers`, `--tulips`, `--clouds`, `--grass`,
+`--leaves`, `--rain`, `--snow`, `--stars` y `--birds`. El arbol, sol, luna, gato y avion
+son objetos unicos del diseno y no admiten cantidad.
+
 Y un benchmark reproducible en consola para compararlas contra sus versiones
 paralelas usando exactamente la misma logica de actualizacion:
 
@@ -301,4 +324,3 @@ Crear un protector de pantalla dinámico, relajante y visualmente atractivo que 
 ![invierno](image-1.png)
 ![integracion de graficos nuevos](image-2.png)
 ![invierno con algunos cambios](image-3.png)
-

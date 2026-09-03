@@ -19,9 +19,13 @@ struct SeasonProfile {
     std::size_t flowerCount;
     float beePresence;
     float butterflyPresence;
+    float birdPresence;
     std::size_t grassCount;
     float rainIntensity;
     float snowIntensity;
+    float sunlight;
+    float sunScale;
+    float cloudCoverage;
 };
 
 struct SeasonVisualState {
@@ -30,9 +34,18 @@ struct SeasonVisualState {
     float flowerCount;
     float beePresence;
     float butterflyPresence;
+    float birdPresence;
     float grassCount;
     float rainIntensity;
     float snowIntensity;
+    float sunlight;
+    float sunScale;
+    float cloudCoverage;
+    float flowerGrowth;
+    float tulipPresence;
+    float rainProgress;
+    float seasonProgress;
+    float springArrivalProgress;
     float transitionProgress;
 };
 

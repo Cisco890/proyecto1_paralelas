@@ -1,13 +1,15 @@
 #include "season.hpp"
 
+#include "celestial_body.hpp"
+
 #include <array>
 
 namespace {
 constexpr std::array<SeasonProfile, 4> profiles = {{
-    {"Primavera", {135, 206, 235, 255}, {76, 140, 74, 255}, 36, 1.0f, 1.0f, 72, 0.65f, 0.0f},
-    {"Verano",    {80, 180, 235, 255},  {64, 132, 62, 255},  6, 0.8f, 0.7f, 58, 0.0f, 0.0f},
-    {"Otono",     {135, 206, 235, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.2f, 20, 0.0f, 0.0f},
-    {"Invierno",  {180, 205, 220, 255}, {180, 205, 245, 255}, 0, 0.0f, 0.0f,  0, 0.0f, 1.0f}
+    {"Primavera", {135, 206, 235, 255}, {76, 140, 74, 255}, 36, 1.0f, 1.0f, 0.9f, 72, 0.0f, 0.0f, 0.92f, 0.95f, 0.75f},
+    {"Verano",    {42, 174, 245, 255},  {57, 145, 48, 255}, 12, 0.8f, 0.7f, 1.0f, 58, 0.0f, 0.0f, 1.00f, 1.35f, 0.35f},
+    {"Otono",     {190, 145, 92, 255},  {125, 105, 54, 255}, 0, 0.0f, 0.1f, 0.45f, 20, 0.0f, 0.0f, 0.62f, 0.75f, 0.65f},
+    {"Invierno",  {180, 205, 220, 255}, {180, 205, 245, 255}, 0, 0.0f, 0.0f, 0.08f, 0, 1.0f, 0.75f, 0.40f, 0.60f, 0.90f}
 }};
 
 Uint8 mixChannel(Uint8 from, Uint8 to, float progress) {
@@ -25,11 +27,11 @@ SDL_Color mixColor(SDL_Color from, SDL_Color to, float progress) {
 }
 
 SeasonSystem createSeasonSystem(Uint32 currentTicks) {
-    // Cada estacion dura 30 segundos. Se puede cambiar desde un archivo de
-    // configuracion en el futuro sin afectar a los elementos del escenario.
-    // Las estaciones duran 45 segundos y la transicion ocupa los ultimos
-    // 12 segundos para que los cambios visuales sean mas lentos.
-    return {Season::Spring, currentTicks, 30000, 6000};
+    constexpr Uint32 sunriseOffset = DAY_NIGHT_CYCLE_MILLISECONDS * 3 / 4;
+    const Uint32 base = currentTicks - (currentTicks % DAY_NIGHT_CYCLE_MILLISECONDS);
+    Uint32 sunrise = base + sunriseOffset;
+    if (currentTicks < sunrise) sunrise -= DAY_NIGHT_CYCLE_MILLISECONDS;
+    return {Season::Spring, sunrise, DAY_NIGHT_CYCLE_MILLISECONDS, 15000};
 }
 
 void updateSeason(SeasonSystem& system, Uint32 currentTicks) {
@@ -73,20 +75,37 @@ SeasonVisualState getSeasonVisualState(
         }
     }
 
+    const float seasonProgress = std::min(
+        1.0f, static_cast<float>(elapsed) / static_cast<float>(system.durationMilliseconds)
+    );
+    const float flowerGrowth = system.current == Season::Spring
+        ? std::min(1.0f, seasonProgress * 1.8f) : 1.0f;
+    const float springArrival = system.current == Season::Spring
+        ? std::min(1.0f, static_cast<float>(elapsed) / 12000.0f) : 1.0f;
+    const float rainEntry = std::min(1.0f, static_cast<float>(elapsed) / 5000.0f);
+    const float rainProgress = system.current == Season::Winter
+        ? rainEntry * (1.0f - progress) : 0.0f;
+
     return {
         mixColor(current.skyColor, next.skyColor, progress),
         mixColor(current.groundColor, next.groundColor, progress),
-        current.flowerCount +
-            (static_cast<float>(next.flowerCount) - current.flowerCount) * progress,
-        current.beePresence + (next.beePresence - current.beePresence) * progress,
-        current.butterflyPresence +
-            (next.butterflyPresence - current.butterflyPresence) * progress,
-        current.grassCount +
-            (static_cast<float>(next.grassCount) - current.grassCount) * progress,
-        current.rainIntensity +
-            (next.rainIntensity - current.rainIntensity) * progress,
-        current.snowIntensity +
-            (next.snowIntensity - current.snowIntensity) * progress,
+        system.current == Season::Spring
+            ? static_cast<float>(current.flowerCount) * flowerGrowth
+            : static_cast<float>(current.flowerCount),
+        current.beePresence * springArrival,
+        current.butterflyPresence * springArrival,
+        current.birdPresence * springArrival,
+        static_cast<float>(current.grassCount) * springArrival,
+        current.rainIntensity * rainProgress,
+        current.snowIntensity * rainProgress,
+        current.sunlight,
+        current.sunScale,
+        current.cloudCoverage,
+        flowerGrowth,
+        system.current == Season::Spring ? flowerGrowth : 0.0f,
+        rainProgress,
+        seasonProgress,
+        springArrival,
         progress
     };
 }
